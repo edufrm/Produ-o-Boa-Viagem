@@ -277,10 +277,13 @@ input.meta-inp:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,
   </div>
 </div>
 
-<div class="bottom-bar">
-  <button class="btn btn-excel" onclick="exportExcel()">📊 Excel</button>
-  <button class="btn btn-s" id="btnMeta" style="display:none" onclick="saveMetas()">💾 Salvar Metas</button>
-  <button class="btn btn-p" onclick="openWA()">📋 WhatsApp</button>
+<div class="bottom-bar" style="justify-content:space-between;align-items:center">
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-excel" onclick="exportExcel()">📊 Excel</button>
+    <button class="btn btn-s" id="btnMeta" style="display:none" onclick="saveMetas()">💾 Salvar Metas</button>
+    <button class="btn btn-p" onclick="openWA()">📋 WhatsApp</button>
+  </div>
+  <span style="font-size:9px;color:var(--text3);font-family:'IBM Plex Mono',monospace" title="Versão do aplicativo">v2.5.0</span>
 </div>
 
 <!-- MODAL WA -->
@@ -319,6 +322,7 @@ try {
   db = firebase.database();
 } catch(e){ console.warn('Firebase não disponível:', e); }
 
+const APP_VERSION = 'v2.5.0';
 const today    = new Date();
 const MONTH_KEY= `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
 const BASE     = `agencia/boa_viagem/${MONTH_KEY}`;
@@ -540,12 +544,20 @@ function getSafrapayVop(gid){
 // ══════════════════════════════════════════════════
 
 // Estado dos filtros
-let DASH_MODE = 'gerente';       // 'gerente' | 'ranking'
+let DASH_MODE   = 'gerente';  // 'gerente' | 'ranking'
+let DASH_PERIODO = 'mes';        // 'hoje' | 'semana' | 'mes'
 let DASH_GERENTES = [...MGR];    // todos por padrão
 let DASH_PRODUTOS = ['tac'];     // produto(s) selecionados
 let DASH_AI_LOADING = false;
 
 // Helper: calcula produção final de seguro de um gerente (inclui extra do Firebase)
+function getAtivosProd(gid){
+  if(!gid) return 0;
+  const d=DATA[gid]; if(!d) return 0;
+  return (parseFloat(String(d.at_bs_prod||'0').replace(/\./g,'').replace(',','.'))||0)+
+         (parseFloat(String(d.at_arv_prod||'0').replace(/\./g,'').replace(',','.'))||0);
+}
+
 function calcSeguroGer(gid){
   let prod=0, canc=0, aCanc=0, chemp=0;
   if(gid===undefined||gid===null) return 0;
@@ -593,7 +605,7 @@ const PRODUTOS_CFG = [
     }
   },
   { id:'giro',      lbl:'Giro de Carteira', fmt_: v=>`${Math.round(v)||0}`, valFn: gid=>getMes(gid,'giro'), metaKey:'giro' },
-  { id:'ativos',    lbl:'Ativos',           fmt_: fmtR, valFn: gid=>{ let t=0; AT.forEach(p=>t+=getMes(gid,`at_${slug(p)}`)); return t; }, metaKey:'ativos' },
+  { id:'ativos',    lbl:'Ativos',           fmt_: fmtR, valFn: gid=>getAtivosProd(gid), metaKey:'ativos' },
   { id:'contas',    lbl:'Contas',           fmt_: v=>`${Math.round(v)||0}`, valFn: gid=>pnd(gid,'contas_amarela_acc')+pnd(gid,'contas_verde_acc')+pnd(gid,'contas_outros_acc'), metaKey:'contas' },
   { id:'consorcio', lbl:'Consórcio',        fmt_: fmtR, valFn: gid=>getMes(gid,'consorcio'), metaKey:'consorcio' },
   { id:'collarkin', lbl:'Collarkin',        fmt_: fmtR, valFn: gid=>getMes(gid,'collarkin'), metaKey:'collarkin' },
@@ -720,6 +732,13 @@ function buildDashFilters(){
         ontouchend="cancelAuditLongPress()"
         onclick="abrirAuditoria()"
         title="Log de auditoria">🔍</div>
+    <!-- Filtro de período -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--border)">
+      ${['hoje','semana','mes'].map(p=>{
+        const lbl = p==='hoje'?'📅 Hoje':p==='semana'?'📆 Semana':'🗓️ Mês';
+        const sel = DASH_PERIODO===p;
+        return `<button onclick="setDashPeriodo('${p}')" style="padding:7px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:${sel?'rgba(30,107,62,0.12)':'transparent'};color:${sel?'var(--accent)':'var(--text3)'};border-bottom:2px solid ${sel?'var(--accent)':'transparent'}">${lbl}</button>`;
+      }).join('')}
     </div>`;
 
   if(DASH_MODE === 'gerente'){
@@ -753,6 +772,14 @@ function buildDashFilters(){
 
 // ── Controles de filtro ──
 function setDashMode(mode){ DASH_MODE=mode; rDash(); }
+function setDashPeriodo(p){ DASH_PERIODO=p; rDash(); }
+
+// Filtrar valor por período
+function getValPeriodo(gid, valFn){
+  // Por enquanto retorna o valor mensal (o Firebase só tem acumulados mensais)
+  // "Hoje" e "Semana" mostram a última atualização do gerente
+  return valFn(gid);
+}
 function setDashGerentes(v){ DASH_GERENTES = v==='all' ? [...MGR] : [v]; rDash(); }
 function toggleDashGerente(gid){
   // Se todos estão selecionados e clica em um → seleciona só esse
@@ -944,29 +971,41 @@ function buildDashRanking(){
         <span style="font-size:10px;color:rgba(255,255,255,0.5)">${getDiasUteisPassados()}/${getTotalDiasUteis()} dias úteis</span>
       </div>`;
 
+    // Calcular posições com empate
+    let posAtual = 1;
+    ranking.forEach((r,i)=>{
+      if(i>0 && ranking[i].val < ranking[i-1].val) posAtual = i+1;
+      ranking[i]._pos = posAtual;
+    });
+
     ranking.forEach((r,i)=>{
       const pct    = getPct(r.val,r.meta);
       const color  = getSemaforoColor(pct);
       const barPct = maxVal>0?Math.round((r.val/maxVal)*100):0;
-      const medal  = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+      const pos    = r._pos||i+1;
+      const medal  = pos===1?'🥇':pos===2?'🥈':pos===3?'🥉':'';
       const gap    = r.meta>0?Math.max(r.meta-r.val,0):null;
+      const rowBg  = r.val < 0 ? 'background:rgba(192,57,43,0.06)' : '';
 
-      h += `<div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+      h += `<div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;${rowBg}">
         <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;width:28px;flex-shrink:0;color:${i===0?'#FFD700':i===1?'#C0C0C0':i===2?'#CD7F32':'var(--text3)'}">${medal||`${i+1}º`}</div>
         <div style="flex:1;min-width:0">
           <div style="display:flex;justify-content:space-between;margin-bottom:4px">
             <span style="font-size:12px;font-weight:700">${r.nome}</span>
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:var(--accent)">${p.fmt_(r.val)}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:${r.val<0?'var(--red)':'var(--accent)'}">${r.val<0?'−':''}${p.fmt_(Math.abs(r.val))}</span>
           </div>
           <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:4px">
-            <div style="height:100%;width:${barPct}%;background:${color};border-radius:3px"></div>
+            <div style="height:100%;width:${barPct}%;background:${r.val<0?'var(--red)':color};border-radius:3px"></div>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
-            ${r.meta>0
-              ? `<span>${pct.toFixed(1)}% da meta (${p.fmt_(r.meta)})</span>${gap>0?`<span style="color:var(--orange)">GAP: ${p.fmt_(gap)}</span>`:`<span style="color:var(--green)">✅</span>`}`
-              : `<span style="font-style:italic">Sem meta</span>`}
+            ${r.val<0
+              ? `<span style="color:var(--red);font-weight:700">⚠️ Produção final negativa</span>`
+              : r.meta>0
+                ? `<span>${pct.toFixed(1)}% da meta (${p.fmt_(r.meta)})</span>${gap>0?`<span style="color:var(--orange)">GAP: ${p.fmt_(gap)}</span>`:`<span style="color:var(--green)">✅</span>`}`
+                : `<span style="font-style:italic">Sem meta</span>`}
           </div>
         </div>
+        ${r.val<0?`<div style="width:4px;height:36px;background:var(--red);border-radius:2px;flex-shrink:0"></div>`:`<div style="width:4px;height:36px;background:${r.val>0?'var(--green)':'var(--border)'};border-radius:2px;flex-shrink:0"></div>`}
       </div>`;
     });
 
@@ -1286,11 +1325,14 @@ function rCredito(){
 // ══════════════════════════════════════════════════
 // METAS EDITOR
 // ══════════════════════════════════════════════════
-const META_KEYS = ['tac','giro','ativos','contas','consorcio','collarkin','captacao','seguro',
+let META_EDIT_MODE = 'gerente'; // 'gerente' | 'produto'
+let META_PROD_SEL  = 'tac';     // produto selecionado no modo produto
+const META_KEYS = ['tac','giro','ativos','ativos_bs','ativos_arv','contas','consorcio','collarkin','captacao','seguro',
                    'viab','safrapay_qtd','safrapay_vop','credito'];
 
 const META_LABELS = {
-  tac:'TAC (R$)', giro:'Giro (qtd)', ativos:'Ativos (R$)',
+  tac:'TAC (R$)', giro:'Giro (qtd)', ativos:'Ativos Total (R$)',
+  ativos_bs:'Ativos BS (R$)', ativos_arv:'Ativos ARV (R$)',
   contas:'Contas', consorcio:'Consórcio', collarkin:'Collarkin',
   captacao:'Captação', seguro:'Seguro',
   viab:'Viabilizados (qtd prod)',
@@ -1300,29 +1342,179 @@ const META_LABELS = {
 };
 
 function rMetas(){
-  let h=`<div class="meta-editor-card">
-    <div class="meta-editor-head">
-      <span class="meta-editor-title">🎯 DEFINIR METAS DO MÊS</span>
+  const segExtras = {};
+  MGR.forEach(gid=>{ try{ segExtras[gid]=JSON.parse(DATA[gid]?.seguro_extra||'{}'); }catch(e){ segExtras[gid]={}; } });
+  const obsSeguro = localStorage.getItem('gg_seguro_obs')||'';
+  const hasObs = obsSeguro.trim().length>0;
+
+  // ── Toggle de modo de edição ──
+  let h = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow)">
+    <div style="display:grid;grid-template-columns:1fr 1fr">
+      <button onclick="META_EDIT_MODE='gerente';rMetas()" style="padding:10px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:${META_EDIT_MODE==='gerente'?'var(--accent)':'var(--surface)'};color:${META_EDIT_MODE==='gerente'?'#fff':'var(--text2)'}">👤 Por Gerente</button>
+      <button onclick="META_EDIT_MODE='produto';rMetas()" style="padding:10px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:${META_EDIT_MODE==='produto'?'var(--accent)':'var(--surface)'};color:${META_EDIT_MODE==='produto'?'#fff':'var(--text2)'}">📦 Por Produto</button>
     </div>
-    <div style="padding:10px 14px 4px;font-size:11px;color:var(--text3)">
-      Defina as metas de cada gerente. Clique em <strong>💾 Salvar Metas</strong> para enviar.
-      Para Viabilizados, Safrapay e Crédito, a meta é em <strong>quantidade de produções</strong>.
+  </div>`;
+
+  if(META_EDIT_MODE === 'produto'){
+    // ── Modo Por Produto ──
+    h += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;padding:10px 14px;box-shadow:var(--shadow)">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Selecione o produto</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${META_KEYS.map(k=>`<button onclick="META_PROD_SEL='${k}';rMetas()" style="padding:4px 10px;border-radius:20px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:${META_PROD_SEL===k?'var(--accent)':'var(--surface)'};color:${META_PROD_SEL===k?'#fff':'var(--text2)'}">${META_LABELS[k]||k}</button>`).join('')}
+      </div>
     </div>`;
-  MGR.forEach(gid=>{
-    h+=`<div class="meta-ger-block">
-      <div class="meta-ger-name">${NAMES[gid]}</div>
-      <div class="meta-grid">`;
-    META_KEYS.forEach(prefix=>{
-      const val=METAS[gid]?.[prefix]||'';
-      h+=`<div class="meta-cell">
-        <div class="meta-cell-lbl">${META_LABELS[prefix]||prefix.toUpperCase()}</div>
-        <input class="meta-inp" id="meta_${gid}_${prefix}" type="text" value="${val?val.toLocaleString('pt-BR'):''}" placeholder="—">
+
+    h += `<div class="meta-editor-card">
+      <div class="meta-editor-head">
+        <span class="meta-editor-title">🎯 ${(META_LABELS[META_PROD_SEL]||META_PROD_SEL).toUpperCase()} — TODOS OS GERENTES</span>
+      </div>
+      <div style="padding:8px 14px 4px;font-size:11px;color:var(--text3)">Edite a meta de <strong>${META_LABELS[META_PROD_SEL]||META_PROD_SEL}</strong> para cada gerente abaixo.</div>`;
+
+    MGR.forEach(gid=>{
+      const val = METAS[gid]?.[META_PROD_SEL]||'';
+      const real = (() => {
+        try {
+          const p = PRODUTOS_CFG.find(x=>x.metaKey===META_PROD_SEL||x.id===META_PROD_SEL);
+          return p ? p.valFn(gid) : 0;
+        } catch(e){ return 0; }
+      })();
+      const pct = val&&real ? Math.min((real/val)*100,100).toFixed(0) : null;
+      const cor = pct ? (pct>=100?'var(--green)':pct>=70?'var(--orange)':'var(--red)') : 'var(--text3)';
+      h += `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:700;color:var(--text);min-width:80px">${NAMES[gid]}</div>
+        <input class="meta-inp" id="meta_${gid}_${META_PROD_SEL}" type="text"
+          value="${val?Number(val).toLocaleString('pt-BR'):''}"
+          placeholder="—"
+          style="flex:1">
+        ${pct?`<div style="text-align:right;min-width:80px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:${cor};font-weight:700">${pct}%</div>
+          <div style="font-size:9px;color:var(--text3)">atual</div>
+        </div>`:''}
       </div>`;
     });
-    h+=`</div></div>`;
+    h += `</div>`;
+
+  } else {
+    // ── Modo Por Gerente (original) ──
+    h += `<div class="meta-editor-card">
+      <div class="meta-editor-head">
+        <span class="meta-editor-title">🎯 DEFINIR METAS DO MÊS</span>
+      </div>
+      <div style="padding:10px 14px 4px;font-size:11px;color:var(--text3)">
+        Defina as metas de cada gerente. Clique em <strong>💾 Salvar Metas</strong> para enviar.
+      </div>`;
+    MGR.forEach(gid=>{
+      h+=`<div class="meta-ger-block">
+        <div class="meta-ger-name">${NAMES[gid]}</div>
+        <div class="meta-grid">`;
+      META_KEYS.forEach(prefix=>{
+        const val=METAS[gid]?.[prefix]||'';
+        h+=`<div class="meta-cell">
+          <div class="meta-cell-lbl">${META_LABELS[prefix]||prefix.toUpperCase()}</div>
+          <input class="meta-inp" id="meta_${gid}_${prefix}" type="text" value="${val?val.toLocaleString('pt-BR'):''}" placeholder="—">
+        </div>`;
+      });
+      h+=`</div></div>`;
+    });
+    h+=`</div>`;
+  }
+
+  // ── Matriz de Seguros ──
+  h+=`<div class="meta-editor-card" style="margin-top:12px">
+    <div class="meta-editor-head" style="background:linear-gradient(135deg,var(--accent),#2d5c42)">
+      <span class="meta-editor-title" style="color:#fff">🛡️ AJUSTES DE SEGURO POR GERENTE</span>
+    </div>
+    <div style="padding:10px 14px 4px;font-size:11px;color:var(--text3)">Informe cancelados, a cancelar e CHEMP. Salvos no Firebase automaticamente.</div>
+    <div style="overflow-x:auto;padding:0 14px 14px">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:var(--surface2)">
+          <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);font-weight:700;border-bottom:1px solid var(--border)">GERENTE</th>
+          <th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--green);font-weight:700;border-bottom:1px solid var(--border)">PRODUÇÃO</th>
+          <th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--blue);font-weight:700;border-bottom:1px solid var(--border)">CHEMP</th>
+          <th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--red);font-weight:700;border-bottom:1px solid var(--border)">CANCELADOS</th>
+          <th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--orange);font-weight:700;border-bottom:1px solid var(--border)">A CANCELAR</th>
+          <th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--accent);font-weight:700;border-bottom:1px solid var(--border)">FINAL</th>
+        </tr></thead>
+        <tbody>`;
+
+  let totProd=0,totChemp=0,totCanc=0,totACanc=0;
+  MGR.forEach(gid=>{
+    const ex=segExtras[gid]||{};
+    const d=DATA[gid];
+    const list=d?.seguro_list?JSON.parse(d.seguro_list):[];
+    const prod=list.reduce((s,v)=>s+(parseFloat(String(v.valor||'0').replace(/\./g,'').replace(',','.'))||0),0);
+    const canc=parseFloat(String(ex.cancelados||'0').replace(/\./g,'').replace(',','.'))||0;
+    const aCanc=parseFloat(String(ex.a_cancelar||'0').replace(/\./g,'').replace(',','.'))||0;
+    const chemp=parseFloat(String(ex.chemp||'0').replace(/\./g,'').replace(',','.'))||0;
+    const final=prod-canc-aCanc+chemp;
+    totProd+=prod;totChemp+=chemp;totCanc+=canc;totACanc+=aCanc;
+    const finalCor=final<0?'var(--red)':'var(--accent)';
+    h+=`<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px 10px;font-weight:600;color:var(--text)">${NAMES[gid]}</td>
+      <td style="padding:6px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green)">${prod?fmtR(prod):'—'}</td>
+      <td style="padding:4px 6px;text-align:center"><input type="text" id="seg_gg_chemp_${gid}" value="${ex.chemp||''}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9.,]/g,'')" style="width:80px;padding:4px 6px;border:1px solid rgba(26,74,122,0.3);border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--blue-bg);color:var(--blue);text-align:center"></td>
+      <td style="padding:4px 6px;text-align:center"><input type="text" id="seg_gg_canc_${gid}" value="${ex.cancelados||''}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9.,]/g,'')" style="width:80px;padding:4px 6px;border:1px solid rgba(192,57,43,0.3);border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--red-bg);color:var(--red);text-align:center"></td>
+      <td style="padding:4px 6px;text-align:center"><input type="text" id="seg_gg_acanc_${gid}" value="${ex.a_cancelar||''}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9.,]/g,'')" style="width:80px;padding:4px 6px;border:1px solid rgba(196,107,0,0.3);border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--orange-bg);color:var(--orange);text-align:center"></td>
+      <td style="padding:6px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:800;color:${finalCor}">${final<0?'−':''}R$ ${fmtR(Math.abs(final))}</td>
+    </tr>`;
   });
-  h+=`</div>`;
+  const totFinal=totProd-totCanc-totACanc+totChemp;
+  const totCor=totFinal<0?'var(--red)':'var(--green)';
+  h+=`<tr style="background:var(--surface2);font-weight:700">
+    <td style="padding:8px 10px;font-size:11px;color:var(--text2)">TOTAL AGÊNCIA</td>
+    <td style="padding:6px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green)">${fmtR(totProd)}</td>
+    <td style="padding:6px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--blue)">${fmtR(totChemp)}</td>
+    <td style="padding:6px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--red)">−${fmtR(totCanc)}</td>
+    <td style="padding:6px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--orange)">−${fmtR(totACanc)}</td>
+    <td style="padding:6px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:800;color:${totCor}">${totFinal<0?'−':''}R$ ${fmtR(Math.abs(totFinal))}</td>
+  </tr></tbody></table></div>
+    <div style="padding:0 14px 14px">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">📝 Observação de Seguro (visível para todos os gerentes)</div>
+      ${hasObs?`<div id="gg_seg_obs_preview" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px 8px 0 0;padding:10px 12px;font-size:12px;color:var(--text2);line-height:1.5;white-space:pre-wrap;cursor:pointer" onclick="toggleGGSegObs()">${obsSeguro.replace(/</g,'&lt;')}</div>`:''}
+      <div id="gg_seg_obs_body" style="${hasObs?'display:none':''}">
+        <textarea id="gg_seg_obs_input" placeholder="Ex: Atenção com cancelamentos de fim de mês…" style="width:100%;min-height:70px;padding:10px;border:1px solid var(--border);border-radius:${hasObs?'0 0 8px 8px':'8px'};font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:var(--text);background:var(--surface2);resize:vertical;outline:none;line-height:1.5" oninput="atualizarGGSegObs(this.value)">${obsSeguro}</textarea>
+      </div>
+      <button onclick="salvarSeguroGG()" style="width:100%;margin-top:8px;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">💾 Salvar Ajustes de Seguro</button>
+    </div>
+  </div>`;
+
   el('sec-metas').innerHTML=h;
+}
+
+function toggleGGSegObs(){
+  const body = el('gg_seg_obs_body');
+  const preview = el('gg_seg_obs_preview');
+  if(!body) return;
+  const hidden = body.style.display==='none';
+  body.style.display = hidden?'block':'none';
+  if(preview) preview.style.display = hidden?'none':'block';
+}
+
+function atualizarGGSegObs(val){
+  localStorage.setItem('gg_seguro_obs', val);
+}
+
+async function salvarSeguroGG(){
+  const db = firebase.database();
+  let salvos = 0;
+  for(const gid of MGR){
+    const chemp  = el(`seg_gg_chemp_${gid}`)?.value||'';
+    const canc   = el(`seg_gg_canc_${gid}`)?.value||'';
+    const acanc  = el(`seg_gg_acanc_${gid}`)?.value||'';
+    const extra  = JSON.stringify({ cancelados:canc, a_cancelar:acanc, chemp });
+    const obs    = el('gg_seg_obs_input')?.value||'';
+    try{
+      await db.ref(`agencia/boa_viagem/${MONTH_KEY}/gerentes/${gid}`).update({
+        seguro_extra: extra,
+        seguro_obs_gg: obs
+      });
+      salvos++;
+    }catch(e){ console.warn('Erro ao salvar seguro de',gid,e); }
+  }
+  // Salvar obs local também
+  localStorage.setItem('gg_seguro_obs', el('gg_seg_obs_input')?.value||'');
+  showToast(`✅ Ajustes de seguro salvos para ${salvos} gerentes!`);
+  rMetas();
 }
 
 // ══════════════════════════════════════════════════
@@ -1506,16 +1698,38 @@ function buildExcel(){
   XLSX.utils.book_append_sheet(wb,ws5,'👥 Pipes & Crédito');
 
   // Salvar
-  const fname=`Producao_BoaViagem_${mth.replace('/','_')}.xlsx`;
-  XLSX.writeFile(wb,fname);
-  showToast(`✅ ${fname} baixado!`);
+  const mesesExt=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const [anoEx,mesEx]=mth.split('/');
+  const mesNome=mesesExt[parseInt(mesEx)-1]||mesEx;
+  const fname=`Producao_BoaViagem_${mesNome}${anoEx}.xlsx`;
+  try {
+    XLSX.writeFile(wb,fname);
+    showToast(`✅ ${fname} baixado! Verifique sua pasta de Downloads.`);
+  } catch(e) {
+    // Fallback para Safari/iOS: gerar Blob e link de download
+    try {
+      const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+      const blob = new Blob([wbout], {type:'application/octet-stream'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = fname;
+      document.body.appendChild(a); a.click();
+      setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+      showToast(`✅ ${fname} — toque em "Download" se solicitado`);
+    } catch(e2){
+      showToast('⚠️ Não foi possível baixar. Tente pelo navegador Chrome.');
+    }
+  }
 }
 
 // ══════════════════════════════════════════════════
 // RENDER ALL
 // ══════════════════════════════════════════════════
 function renderAll(){
-  rHojeGG(); rDash(); rMetas(); rSecretariaGG();
+  try{ rHojeGG(); }catch(e){ console.warn('rHojeGG:', e); }
+  try{ rDash(); }catch(e){ console.warn('rDash:', e); }
+  try{ rMetas(); }catch(e){ console.warn('rMetas:', e); }
+  try{ rSecretariaGG(); }catch(e){ console.warn('rSecretariaGG:', e); }
 }
 
 // ══════════════════════════════════════════════════
@@ -1610,6 +1824,17 @@ function buildGGContext(){
   if(ag.length){ lines.push(''); lines.push('=== PRÓXIMOS COMPROMISSOS =='); ag.forEach(a=>lines.push(`${a.data} ${a.hora||''} — ${a.titulo}`)); }
   const lb=getGGLemb().filter(l=>!l.feito).slice(0,5);
   if(lb.length){ lines.push(''); lines.push('=== LEMBRETES =='); lb.forEach(l=>lines.push(`• ${l.texto}`)); }
+  // Resumo de conversas dos gerentes com a SecretárIA
+  lines.push('');
+  lines.push('=== ÚLTIMAS INTERAÇÕES COM SECRETÁRIA ===');
+  MGR.forEach(gid=>{
+    const histKey = 'safra_prod_'+gid+'_sec_hist';
+    try{
+      const hist = JSON.parse(localStorage.getItem(histKey)||'[]');
+      const ultimas = hist.slice(-4).filter(m=>m.role==='user').map(m=>m.content?.substring(0,80));
+      if(ultimas.length) lines.push(`${NAMES[gid]}: "${ultimas.join('" | "')}"`)
+    }catch(e){}
+  });
   return lines.join('\n');
 }
 
@@ -1878,6 +2103,54 @@ function getFraseGGHoje(){
   return FRASES_GG[dayOfYear % FRASES_GG.length];
 }
 
+function carregarRecadosGG(){
+  if(typeof firebase === 'undefined') return;
+  const todayStr = toDateStrGG(today);
+  const db2 = firebase.database();
+  db2.ref(`agencia/boa_viagem/${MONTH_KEY}/recados`).once('value', snap=>{
+    const val = snap.val();
+    const lista = el('gg_recados_lista');
+    const count = el('gg_recados_count');
+    if(!lista) return;
+    if(!val){
+      lista.innerHTML = '<span style="color:var(--text3);font-style:italic">Nenhum recado enviado hoje.</span>';
+      if(count) count.textContent = '0 recados';
+      return;
+    }
+    const recados = Object.entries(val)
+      .map(([k,r])=>({...r,_key:k}))
+      .filter(r=>r.data===todayStr)
+      .sort((a,b)=>a.ts?.localeCompare(b.ts||'')||0);
+
+    if(count) count.textContent = `${recados.length} recado(s)`;
+    if(!recados.length){
+      lista.innerHTML = '<span style="color:var(--text3);font-style:italic">Nenhum recado enviado hoje.</span>';
+      return;
+    }
+    lista.innerHTML = recados.map(r=>{
+      const dt = new Date(r.ts);
+      const hr = `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+      const dest = r.para==='todos' ? 'Todos' : (NAMES[r.para]||r.para);
+      const lidoPor = r.lido_por ? Object.keys(r.lido_por) : [];
+      const totalDest = r.para==='todos' ? MGR.length : 1;
+      const lidoTxt = lidoPor.length === 0
+        ? '<span style="color:var(--text3)">⏳ Não lido</span>'
+        : lidoPor.length >= totalDest
+          ? `<span style="color:var(--green);font-weight:700">✓✓ Lido por todos</span>`
+          : `<span style="color:var(--orange)">✓ Lido por ${lidoPor.map(g=>NAMES[g]||g).join(', ')}</span>`;
+
+      return `<div style="padding:8px 10px;background:var(--surface2);border-radius:8px;margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:10px;font-weight:700;color:var(--accent)">→ ${dest}</span>
+          <span style="font-size:9px;color:var(--text3)">${hr}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text);line-height:1.4;margin-bottom:4px">${r.texto?.replace(/</g,'&lt;')||''}</div>
+        <div style="font-size:10px">${lidoTxt}</div>
+      </div>`;
+    }).join('');
+  });
+}
+
 function rHojeGG(){
   const dias = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
   const meses = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -1907,22 +2180,85 @@ function rHojeGG(){
   </div>`;
 
   // ── Disciplina da equipe ──
+  // ── Status da Equipe ──
+  // Calcular dias úteis da semana atual (seg a hoje)
+  const semanaAtual = (()=>{
+    const d = new Date(today);
+    const dow = d.getDay();
+    const off = dow===0?-6:1-dow;
+    const seg = new Date(d); seg.setDate(d.getDate()+off);
+    const dias = [];
+    for(let i=0;i<5;i++){
+      const dt2=new Date(seg); dt2.setDate(seg.getDate()+i);
+      if(dt2<=today) dias.push(dt2.toISOString().slice(0,10));
+    }
+    return dias;
+  })();
+  const diasSemana = semanaAtual.length; // quantos dias úteis já passaram esta semana
+
   h += `<div class="hoje-gg-section">
     <div class="hoje-gg-header">
-      <span class="hoje-gg-title">👥 Disciplina da Equipe Hoje</span>
+      <span class="hoje-gg-title">👥 Status da Equipe</span>
+      <span style="font-size:10px;color:var(--text3)">Semana: ${diasSemana} dia${diasSemana!==1?'s':''} úteis</span>
     </div>`;
+
   MGR.forEach(gid=>{
-    const st = gerStatus(gid);
+    const st   = gerStatus(gid);
     const online = st.cls==='badge-on';
-    const tac = getMes(gid,'tac');
-    const tacM = METAS[gid]?.tac||0;
-    const pct = tacM>0?(tac/tacM*100).toFixed(0)+'%':'sem meta';
-    h += `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border)">
-      <div style="width:8px;height:8px;border-radius:50%;background:${online?'var(--green)':'var(--red)'};flex-shrink:0"></div>
-      <div style="flex:1;font-size:12px;font-weight:600;color:var(--text)">${NAMES[gid]}</div>
-      <div style="font-size:10px;color:var(--text3)">TAC: <strong style="color:var(--accent)">${fmtR(tac)||'R$ 0'}</strong> ${tacM?`(${pct})`:''}
+
+    // Hora da última atualização
+    const tsRaw = DATA[gid]?._ultima_atualizacao;
+    let tsHora = '—', tsAlerta = false;
+    if(tsRaw){
+      const d2   = new Date(tsRaw);
+      const agora = new Date();
+      const mesmodia = d2.toDateString()===agora.toDateString();
+      tsHora = mesmodia
+        ? `${String(d2.getHours()).padStart(2,'0')}:${String(d2.getMinutes()).padStart(2,'0')}`
+        : `${String(d2.getDate()).padStart(2,'0')}/${String(d2.getMonth()+1).padStart(2,'0')} ${String(d2.getHours()).padStart(2,'0')}:${String(d2.getMinutes()).padStart(2,'0')}`;
+      // Alerta: online mas sem atualizar há mais de 3h hoje
+      const diffH = (agora-d2)/3600000;
+      if(mesmodia && diffH>3) tsAlerta = true;
+    }
+
+    // Assiduidade semanal: quantos dias da semana o gerente atualizou
+    const dailyHist = DATA[gid]?.daily_hist ? (() => { try{ return JSON.parse(DATA[gid].daily_hist); }catch(e){ return {}; } })() : {};
+    const diasAtualizou = semanaAtual.filter(d2=>dailyHist[d2] || (d2===semanaAtual[semanaAtual.length-1] && online)).length;
+    const assid = `${diasAtualizou}/${diasSemana}`;
+    const assidColor = diasAtualizou===0?'var(--red)':diasAtualizou<diasSemana?'var(--orange)':'var(--green)';
+
+    // Bolinhas de assiduidade (uma por dia útil da semana)
+    const bolinha = semanaAtual.map((d2,i)=>{
+      const atualizou = dailyHist[d2] || (d2===semanaAtual[semanaAtual.length-1] && online);
+      const ehHoje = d2===semanaAtual[semanaAtual.length-1];
+      return `<div title="${d2}" style="width:10px;height:10px;border-radius:50%;background:${atualizou?'var(--green)':ehHoje&&online?'var(--green)':'var(--border)'};border:1px solid ${atualizou?'var(--green)':'var(--border)'}"></div>`;
+    }).join('');
+
+    h += `<div style="padding:10px 14px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <!-- Status online -->
+        <div style="position:relative;flex-shrink:0">
+          <div style="width:10px;height:10px;border-radius:50%;background:${online?'var(--green)':'var(--red)'}"></div>
+          ${online?`<div style="position:absolute;inset:0;border-radius:50%;background:var(--green);animation:pulse-rec 1.5s ease-in-out infinite;opacity:0.4"></div>`:''}
+        </div>
+        <!-- Nome -->
+        <div style="flex:1;font-size:13px;font-weight:700;color:var(--text)">${NAMES[gid]}</div>
+        <!-- Hora -->
+        <div style="text-align:right;font-size:10px">
+          <div style="font-family:'IBM Plex Mono',monospace;color:${tsAlerta?'var(--orange)':online?'var(--green)':'var(--text3)'};font-weight:700">
+            ${tsAlerta?'⚠️ ':online?'🟢 ':'🔴 '}${tsHora}
+          </div>
+        </div>
+        <!-- App -->
+        <a href="gerente_${gid}.html" target="_blank" style="font-size:10px;color:var(--gold);text-decoration:none;background:var(--surface2);padding:3px 8px;border-radius:10px;border:1px solid var(--border);flex-shrink:0">App</a>
       </div>
-      <a href="gerente_${gid}.html" target="_blank" style="font-size:10px;color:var(--gold);text-decoration:none;background:var(--surface2);padding:3px 8px;border-radius:10px;border:1px solid var(--border)">App</a>
+      <!-- Assiduidade semanal -->
+      <div style="display:flex;align-items:center;gap:8px;margin-top:7px;padding-top:6px;border-top:1px solid var(--border)">
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;min-width:60px">Semana</div>
+        <div style="display:flex;gap:4px;align-items:center">${bolinha}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:800;color:${assidColor};margin-left:4px">${assid}</div>
+        <div style="font-size:9px;color:var(--text3)">dias úteis</div>
+      </div>
     </div>`;
   });
   h += `</div>`;
@@ -1937,7 +2273,7 @@ function rHojeGG(){
   const prodsCons = [
     { lbl:'TAC',          val:MGR.reduce((s,g)=>s+getMes(g,'tac'),0),          fmt_:v=>`R$ ${fmtR(v)}` },
     { lbl:'Giro',         val:MGR.reduce((s,g)=>s+getMes(g,'giro'),0),         fmt_:v=>`${Math.round(v)}` },
-    { lbl:'Ativos',       val:MGR.reduce((s,g)=>{ let t=0; AT.forEach(p=>t+=getMes(g,`at_${slug(p)}`)); return s+t; },0), fmt_:v=>`R$ ${fmtR(v)}` },
+    { lbl:'Ativos',       val:MGR.reduce((s,g)=>s+getAtivosProd(g),0), fmt_:v=>`R$ ${fmtR(v)}` },
     { lbl:'Contas',       val:MGR.reduce((s,g)=>s+pnd(g,'contas_amarela_acc')+pnd(g,'contas_verde_acc')+pnd(g,'contas_outros_acc'),0), fmt_:v=>`${Math.round(v)}` },
     { lbl:'Consórcio',    val:MGR.reduce((s,g)=>s+getMes(g,'consorcio'),0),    fmt_:v=>`R$ ${fmtR(v)}` },
     { lbl:'Collarkin',    val:MGR.reduce((s,g)=>s+getMes(g,'collarkin'),0),    fmt_:v=>`R$ ${fmtR(v)}` },
@@ -1994,6 +2330,15 @@ function rHojeGG(){
     h += `</div>`;
   }
 
+  // ── Recados enviados hoje ──
+  h += `<div class="hoje-gg-section" id="gg_recados_panel">
+    <div class="hoje-gg-header">
+      <span class="hoje-gg-title">📢 Recados Enviados Hoje</span>
+      <span id="gg_recados_count" style="font-size:10px;color:var(--text3)">carregando…</span>
+    </div>
+    <div id="gg_recados_lista" style="padding:10px 14px;font-size:12px;color:var(--text3);font-style:italic">—</div>
+  </div>`;
+
   // ── Nota do dia ──
   h += `<div class="hoje-gg-section">
     <div class="hoje-gg-header"><span class="hoje-gg-title">📋 Nota do Dia</span></div>
@@ -2024,6 +2369,8 @@ function rHojeGG(){
   // Focar textarea se tiver nota
   const ta = el('gg_nota_hoje_tab');
   if(ta){ ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
+  // Carregar recados enviados assincronamente
+  setTimeout(carregarRecadosGG, 300);
 }
 
 function salvarNotaGGTab(){
