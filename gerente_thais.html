@@ -2512,13 +2512,24 @@ function buildSecSystemPrompt(){
 Você é uma assistente executiva especializada em gestão bancária comercial. Ajude o gerente a ser mais produtivo, informado e eficiente.
 
 CAPACIDADES:
-1. INSERIR PRODUÇÃO/PIPE — colete todas as informações necessárias e retorne JSON: \`\`\`json\n{"action":"inserir_producao","modulo":"viab|safrapay|credito","tipo":"pipe|prod","cliente":"nome","valor":"","data":"YYYY-MM-DD",...}\`\`\`
-2. AGENDA — retorne JSON: \`\`\`json\n{"action":"agendar","titulo":"","data":"YYYY-MM-DD","hora":"HH:MM","descricao":""}\`\`\`
-3. LEMBRETE — retorne JSON: \`\`\`json\n{"action":"lembrete","texto":""}\`\`\`
+1. INSERIR PRODUÇÃO — colete as informações abaixo conforme o módulo e retorne JSON em bloco separado:
+
+Viabilizados (tem cliente): {"action":"inserir_producao","modulo":"viab","tipo":"pipe ou prod","cliente":"nome","viabiliza":"safrapay|cobranca|captacao|credito|margem","valor":"","data":"YYYY-MM-DD"}
+Safrapay (tem cliente): {"action":"inserir_producao","modulo":"safrapay","tipo":"pipe ou prod","cliente":"nome","vop":"valor VOP","arv":"sim ou nao","status":"","data":"YYYY-MM-DD"}
+Credito BS (tem cliente): {"action":"inserir_producao","modulo":"credito","tipo":"pipe ou prod","cliente":"nome","valor":"","garantia":"","status":"","data":"YYYY-MM-DD"}
+Seguro (SEM cliente - so tipo e valor): {"action":"inserir_producao","modulo":"seguro","tipo_seguro":"Seguro Prestamista|Seguro Vida Individual|Seguro Patrimonial|Seguro Capital Global|Seguro Residencial|Seguro Perda de Receita","valor":"18000","data":"YYYY-MM-DD"}
+TAC: {"action":"inserir_producao","modulo":"tac","valor":"18000"}
+Giro de Carteira: {"action":"inserir_producao","modulo":"giro","valor":"5"}
+Consorcio: {"action":"inserir_producao","modulo":"consorcio","valor":"10000"}
+Collarkin: {"action":"inserir_producao","modulo":"collarkin","valor":"5000"}
+Captacao: {"action":"inserir_producao","modulo":"captacao","valor":"50000"}
+
+2. AGENDA — retorne JSON em bloco separado: {"action":"agendar","titulo":"","data":"YYYY-MM-DD","hora":"HH:MM","descricao":""}
+3. LEMBRETE — retorne JSON em bloco separado: {"action":"lembrete","texto":""}
 4. BUSCA CNPJ/EMPRESA — use conhecimentos sobre ramo de atividade e sugira oportunidades de produtos Safra.
-5. ANÁLISE DE PERFORMANCE — analise dados reais do gerente, compare com colegas anonimamente, sugira melhorias.
-6. DICAS COMERCIAIS — seguros, consórcio, capital de giro, antecipação, desconto, investimentos, SafraPay, crédito.
-7. MERCADO FINANCEIRO — notícias e tendências que afetam a carteira.
+5. ANALISE DE PERFORMANCE — analise dados reais do gerente, compare com colegas anonimamente, sugira melhorias.
+6. DICAS COMERCIAIS — seguros, consorcio, capital de giro, antecipacao, desconto, investimentos, SafraPay, credito.
+7. MERCADO FINANCEIRO — noticias e tendencias que afetam a carteira.
 
 REGRAS:
 - Seja direta, prática e motivadora. Tom profissional mas próximo.
@@ -2657,10 +2668,48 @@ async function processSecActions(texto){
       saveLemb(lb); showToast('⏰ Lembrete salvo!');
     } else if(a.action==='inserir_producao'){
       const mod=(a.modulo||'').toLowerCase();
-      const tipo=a.tipo||'pipe';
-      if(mod.includes('viab')){ const l=getViabList(); l.push({cliente:a.cliente||'',viabiliza:a.viabiliza||'',valor:a.valor||'',data:a.data||toDateStr(today),tipo,_confirmed:false}); saveViabList(l); bViab(); showToast('✅ Inserido em Viabilizados!'); }
-      else if(mod.includes('safrapay')){ const l=getSafrapayList(); l.push({cliente:a.cliente||'',vop:a.vop||'',arv:a.arv||'nao',arvValor:a.arv_valor||'',status:a.status||'',data:a.data||toDateStr(today),tipo,_confirmed:false}); saveSafrapayList(l); bSafrapay(); showToast('✅ Inserido em Safrapay!'); }
-      else if(mod.includes('cred')){ const l=getCreditoList(); l.push({cliente:a.cliente||'',valor:a.valor||'',garantia:a.garantia||'',status:a.status||'',data:a.data||toDateStr(today),tipo,_confirmed:false}); saveCreditoList(l); bCredito(); showToast('✅ Inserido em Crédito BS!'); }
+      const tipo=a.tipo||'prod';
+      if(mod.includes('viab')){ 
+        const l=getViabList(); 
+        l.push({cliente:a.cliente||'',viabiliza:a.viabiliza||'',valor:a.valor||'',data:a.data||toDateStr(today),tipo,_confirmed:false}); 
+        saveViabList(l); bViab(); showToast('✅ Inserido em Viabilizados!'); 
+      } else if(mod.includes('safrapay')){ 
+        const l=getSafrapayList(); 
+        l.push({cliente:a.cliente||'',vop:a.vop||'',arv:a.arv||'nao',arvValor:a.arv_valor||'',status:a.status||'',data:a.data||toDateStr(today),tipo,_confirmed:false}); 
+        saveSafrapayList(l); bSafrapay(); showToast('✅ Inserido em Safrapay!'); 
+      } else if(mod.includes('cred')){ 
+        const l=getCreditoList(); 
+        l.push({cliente:a.cliente||'',valor:a.valor||'',garantia:a.garantia||'',status:a.status||'',data:a.data||toDateStr(today),tipo,_confirmed:false}); 
+        saveCreditoList(l); bCredito(); showToast('✅ Inserido em Crédito BS!'); 
+      } else if(mod.includes('seguro')){ 
+        // Seguro: só tipo + valor, sem cliente
+        const tipoSeg = a.tipo_seguro || a.tipo_produto || a.subtipo || '';
+        const valorSeg = a.valor || '';
+        if(tipoSeg && valorSeg){
+          const list = getSeguroList();
+          list.push({tipo:tipoSeg, valor:fmtVal(String(valorSeg).replace(/\D/g,'')), data:a.data||toDateStr(today)});
+          saveSeguroList(list);
+          bSeguro();
+          showToast('✅ Seguro registrado!');
+        } else { showToast('⚠️ Tipo ou valor do seguro em falta'); }
+      } else if(mod.includes('tac')){
+        sv('tac_dia', fmtVal(String(a.valor||'').replace(/\D/g,'')));
+        recompute(); bTAC(); showToast('✅ TAC atualizado!');
+      } else if(mod.includes('giro')){
+        sv('giro_dia', String(parseInt(a.valor||'0')||''));
+        recompute(); bGiro(); showToast('✅ Giro atualizado!');
+      } else if(mod.includes('consorcio')||mod.includes('consórcio')){
+        sv('consorcio_dia', fmtVal(String(a.valor||'').replace(/\D/g,'')));
+        recompute(); showToast('✅ Consórcio atualizado!');
+      } else if(mod.includes('collarkin')){
+        sv('collarkin_dia', fmtVal(String(a.valor||'').replace(/\D/g,'')));
+        recompute(); showToast('✅ Collarkin atualizado!');
+      } else if(mod.includes('captacao')||mod.includes('captação')){
+        sv('captacao_dia', fmtVal(String(a.valor||'').replace(/\D/g,'')));
+        recompute(); showToast('✅ Captação atualizada!');
+      } else {
+        showToast(`⚠️ Módulo "${mod}" não reconhecido para inserção`);
+      }
     }
   }catch(e){ console.warn('Action error:',e); }
 }
