@@ -1,0 +1,1820 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GG — Boa Viagem</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#f5f3ef;--surface:#fff;--surface2:#f0ede8;--border:#e2ddd6;
+  --accent:#1a3a2a;--accent2:#2d5c42;--gold:#c9a84c;--gold-light:#f0e6c8;
+  --text:#1a1a18;--text2:#6b6560;--text3:#a8a29c;
+  --green:#1e6b3e;--green-bg:#eaf4ee;
+  --orange:#c46b00;--orange-bg:#fff4e6;
+  --red:#c0392b;--red-bg:#fdf0ee;
+  --blue:#1a4a7a;--blue-bg:#eaf0f8;
+  --purple:#5b2d8e;--purple-bg:#f3eefa;
+  --radius:12px;--shadow:0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.04);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:90px}
+
+/* HEADER */
+.header{background:var(--accent);padding:14px 16px 0;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.18)}
+.header-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.brand-name{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:#fff;letter-spacing:-.3px;line-height:1.1}
+.brand-sub{font-size:10px;color:rgba(255,255,255,.45);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.date-pill{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--gold-light);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);padding:3px 9px;border-radius:20px;white-space:nowrap}
+.sync-pill{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;background:rgba(196,107,0,.25);color:#ffc97a;border:1px solid rgba(196,107,0,.3);transition:all .3s}
+.modal-overlay.open { display:flex !important; }
+#audit_trigger:hover { opacity:1 !important; }
+
+/* ── SECRETÁRIA GG ── */
+.sec-chat{display:flex;flex-direction:column;height:calc(100vh - 160px);min-height:400px}
+.chat-messages{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.chat-msg{max-width:88%;display:flex;flex-direction:column;gap:3px}
+.chat-msg.user{align-self:flex-end}
+.chat-msg.ai{align-self:flex-start}
+.chat-bubble{padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.5}
+.chat-bubble.user{background:var(--accent);color:#fff;border-radius:16px 16px 4px 16px}
+.chat-bubble.ai{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:16px 16px 16px 4px;box-shadow:var(--shadow);white-space:pre-wrap}
+.chat-bubble.ai.loading{color:var(--text3);font-style:italic}
+.chat-ts{font-size:9px;color:var(--text3);padding:0 4px}
+.chat-input-bar{padding:10px 14px 14px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end}
+.chat-input{flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:20px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);resize:none;max-height:100px;line-height:1.4;outline:none}
+.chat-input:focus{border-color:var(--accent);background:#fff}
+.chat-btn-mic{width:38px;height:38px;border-radius:50%;border:none;background:var(--red-bg);color:var(--red);font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.chat-btn-mic.rec{background:var(--red);color:#fff;animation:pulse-rec 1s ease-in-out infinite}
+@keyframes pulse-rec{0%,100%{opacity:1}50%{opacity:0.6}}
+.chat-btn-send{width:38px;height:38px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.chat-header-bar{padding:12px 14px;background:linear-gradient(135deg,var(--accent),#2d5c42);display:flex;align-items:center;gap:10px;border-radius:var(--radius) var(--radius) 0 0}
+.chat-avatar{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.agenda-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin:4px 0;font-size:12px}
+.agenda-time{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--gold);font-weight:700}
+.lembrete-item{background:var(--orange-bg);border:1px solid rgba(196,107,0,0.2);border-radius:8px;padding:8px 12px;margin:4px 0;font-size:12px;color:var(--orange)}
+
+/* TABS */
+.tabs-wrapper{position:relative}
+.tabs-wrapper::before,.tabs-wrapper::after{content:'';position:absolute;top:0;bottom:0;width:32px;pointer-events:none;z-index:2;transition:opacity .2s}
+.tabs-wrapper::before{left:0;background:linear-gradient(to right,var(--accent),transparent);opacity:0}
+.tabs-wrapper::after{right:0;background:linear-gradient(to left,var(--accent) 30%,transparent);opacity:1}
+.tabs-wrapper.scroll-start::before{opacity:0}
+.tabs-wrapper.scroll-end::after{opacity:0}
+.tabs-wrapper.scroll-mid::before{opacity:1}
+.tabs-scroll-hint{position:absolute;right:4px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.5);font-size:13px;pointer-events:none;z-index:3;animation:nudge 1.6s ease-in-out infinite;transition:opacity .2s}
+.tabs-wrapper.scroll-end .tabs-scroll-hint{opacity:0}
+@keyframes nudge{0%,100%{transform:translateY(-50%) translateX(0)}50%{transform:translateY(-50%) translateX(3px)}}
+.tabs{display:flex;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:9px 13px;font-family:'IBM Plex Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,.45);border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.tab.active{color:#fff;border-bottom-color:var(--gold);font-weight:700}
+
+/* SECTIONS */
+.section{display:none;padding:14px 14px 0}
+.section.active{display:block}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;box-shadow:var(--shadow);overflow:hidden}
+.card-header{padding:10px 14px;background:var(--accent);display:flex;justify-content:space-between;align-items:center}
+.card-header.light{background:var(--surface2);border-bottom:1px solid var(--border)}
+.card-header.gold{background:linear-gradient(135deg,#1a3a2a,#2d5c42)}
+.card-header.blue{background:var(--blue)}
+.card-header.purple{background:var(--purple)}
+.card-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.9)}
+.card-header.light .card-title{color:var(--accent)}
+.card-subtitle{font-size:10px;color:rgba(255,255,255,.45)}
+.card-count{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;background:rgba(255,255,255,.15);color:#fff;padding:2px 8px;border-radius:10px}
+
+/* ROWS */
+.row{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--border);gap:6px}
+.row:last-child{border-bottom:none}
+.row.tr{background:var(--green-bg)}
+.lbl{font-size:12px;color:var(--text2);flex:1;min-width:0}
+.lbl.m{color:var(--text);font-weight:600}
+.lbl.t{color:var(--green);font-weight:600}
+.val{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--green);background:var(--green-bg);border:1px solid rgba(30,107,62,.15);border-radius:6px;padding:4px 8px;min-width:70px;text-align:right}
+.val.neu{color:var(--text2);background:var(--surface2);border-color:var(--border)}
+.val.total{color:var(--accent);background:var(--surface2);border-color:var(--border);font-weight:700}
+.val.neg{color:var(--red);background:var(--red-bg);border-color:rgba(192,57,43,.2)}
+
+/* GER BLOCK */
+.ger-block{border-bottom:1px solid var(--border)}
+.ger-block:last-child{border-bottom:none}
+.ger-head{padding:8px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.ger-head-name{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--accent)}
+.ger-status{font-size:10px;font-weight:600;padding:2px 7px;border-radius:8px}
+.ger-status.done{background:var(--green-bg);color:var(--green)}
+.ger-status.pending{background:var(--orange-bg);color:var(--orange)}
+.ger-status.offline{background:var(--surface2);color:var(--text3)}
+
+/* META BAR */
+.meta-row-wrap{padding:8px 14px;border-bottom:1px solid var(--border);background:rgba(201,168,76,.04)}
+.meta-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.meta-lbl{font-size:10px;color:var(--text2);font-weight:600}
+.meta-pct{font-size:11px;font-weight:700;color:var(--green)}
+.meta-pct.warn{color:var(--orange)}
+.meta-pct.low{color:var(--red)}
+.progress-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--green),#4caf7d);border-radius:3px;transition:width .4s ease}
+.progress-fill.warn{background:linear-gradient(90deg,var(--orange),#f0a030)}
+.progress-fill.low{background:linear-gradient(90deg,var(--red),#e05a4a)}
+.progress-fill.over{background:linear-gradient(90deg,var(--gold),#e8c060)}
+
+/* STATUS GRID */
+.status-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)}
+.sc{background:var(--surface);padding:10px 12px}
+.sc-name{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--accent);margin-bottom:2px}
+.sc-time{font-size:10px;color:var(--text3);margin-bottom:5px}
+.sc-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.sc-badge.done{background:var(--green-bg);color:var(--green)}
+.sc-badge.pending{background:var(--orange-bg);color:var(--orange)}
+.sc-badge.offline{background:var(--surface2);color:var(--text3)}
+
+/* RANKING */
+.rank-item{display:flex;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);gap:8px}
+.rank-item:last-child{border-bottom:none}
+.rank-pos{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--text3);width:22px;flex-shrink:0}
+.rank-pos.p1{color:var(--gold)}
+.rank-pos.p2{color:var(--text2)}
+.rank-pos.p3{color:var(--orange)}
+.rank-name{font-size:12px;font-weight:600;color:var(--accent);width:74px;flex-shrink:0}
+.rank-bar-wrap{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.rank-bar{height:100%;background:linear-gradient(90deg,var(--green),#4caf7d);border-radius:2px;transition:width .4s ease}
+.rank-val{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:var(--green);min-width:60px;text-align:right}
+
+/* CLIENTE MINI */
+.cm{padding:8px 14px;border-bottom:1px solid var(--border)}
+.cm:last-child{border-bottom:none}
+.cm-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.cm-name{font-size:12px;font-weight:600;color:var(--text)}
+.cm-badge{font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px}
+.cm-badge.pipe{background:var(--blue-bg);color:var(--blue)}
+.cm-badge.prod{background:var(--green-bg);color:var(--green)}
+.cm-detail{font-size:11px;color:var(--text3)}
+
+/* META EDITOR */
+.meta-editor-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden}
+.meta-editor-head{padding:10px 14px;background:linear-gradient(135deg,#1a3a2a,#2d5c42);display:flex;justify-content:space-between;align-items:center}
+.meta-editor-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--gold-light)}
+.meta-ger-block{border-bottom:1px solid var(--border)}
+.meta-ger-block:last-child{border-bottom:none}
+.meta-ger-name{padding:8px 14px 6px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--accent);background:var(--surface2);border-bottom:1px solid var(--border)}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)}
+.meta-cell{background:var(--surface);padding:8px 10px}
+.meta-cell-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:4px}
+input.meta-inp{font-family:'IBM Plex Mono',monospace;font-size:12px;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.3);border-radius:6px;color:var(--accent);padding:5px 7px;width:100%;text-align:right;outline:none;transition:border-color .15s;-webkit-appearance:none}
+input.meta-inp:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.12)}
+
+/* WA TOGGLE */
+.wa-row{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:rgba(37,211,102,.05);border-top:1px solid rgba(37,211,102,.12)}
+.wa-label{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:5px}
+.toggle-switch{position:relative;width:36px;height:20px}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:10px;cursor:pointer;transition:.2s}
+.toggle-slider::before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle-switch input:checked+.toggle-slider{background:#25D366}
+.toggle-switch input:checked+.toggle-slider::before{transform:translateX(16px)}
+
+/* BOTTOM BAR */
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:10px 14px;display:flex;gap:8px;z-index:200;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
+.btn{font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px;padding:11px 12px;transition:all .12s;white-space:nowrap}
+.btn:active{transform:scale(.97);opacity:.88}
+.btn-p{background:var(--accent);color:#fff;flex:1}
+.btn-s{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+.btn-gold{background:linear-gradient(135deg,#c9a84c,#e8c060);color:#1a3a2a;font-weight:700}
+.btn-excel{background:var(--green-bg);color:var(--green);border:1px solid rgba(30,107,62,.2)}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:flex-end;backdrop-filter:blur(2px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-height:90vh;overflow-y:auto;padding:0 0 24px;animation:up .22s cubic-bezier(.32,.72,0,1)}
+@keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.mhandle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:14px auto 0}
+.mheader{padding:14px 16px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.mtitle{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--accent)}
+.mbody{padding:14px 16px 0}
+.wabox{font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.8;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;white-space:pre-wrap;word-break:break-word;max-height:48vh;overflow-y:auto}
+.cpbtn{margin-top:12px;width:100%;padding:14px;background:#25D366;color:#fff;border:none;border-radius:10px;font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.clbtn{margin-top:8px;width:100%;padding:12px;background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:10px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;cursor:pointer}
+
+/* TOAST */
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--accent);color:#fff;padding:9px 20px;border-radius:24px;font-size:12px;font-weight:600;opacity:0;pointer-events:none;transition:all .2s;z-index:999;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.18)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* EMPTY */
+.empty{padding:20px 14px;text-align:center;color:var(--text3);font-size:12px}
+.empty-icon{font-size:26px;margin-bottom:6px}
+
+/* LEGEND */
+.legend{display:flex;gap:12px;padding:6px 14px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text3)}
+.dot{width:7px;height:7px;border-radius:50%}
+.dot.g{background:var(--green)}
+/* ── DIÁRIO ── */
+.diario-day { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; box-shadow:var(--shadow); }
+.diario-day-header { padding:10px 14px; background:var(--accent); display:flex; justify-content:space-between; align-items:center; }
+.diario-day-date { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:#fff; }
+.diario-day-badge { font-size:10px; color:var(--gold-light); background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:10px; }
+.diario-entry { padding:12px 14px; font-size:13px; color:var(--text); line-height:1.6; white-space:pre-wrap; border-bottom:1px solid var(--border); }
+.diario-entry:last-child { border-bottom:none; }
+.diario-input-area { padding:12px 14px; }
+.diario-textarea { width:100%; min-height:100px; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-family:'IBM Plex Sans',sans-serif; font-size:13px; color:var(--text); background:var(--surface2); resize:vertical; line-height:1.5; }
+.diario-textarea:focus { outline:none; border-color:var(--accent); background:#fff; }
+.diario-btns { display:flex; gap:8px; margin-top:8px; }
+.diario-btn-mic { padding:8px 14px; background:var(--red-bg); color:var(--red); border:1px solid rgba(192,57,43,0.2); border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px; }
+.diario-btn-mic.recording { background:var(--red); color:#fff; animation:pulse-rec 1s ease-in-out infinite; }
+@keyframes pulse-rec { 0%,100%{opacity:1} 50%{opacity:0.6} }
+.diario-btn-save { flex:1; padding:8px; background:var(--accent); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; }
+.resumo-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; box-shadow:var(--shadow); }
+.resumo-header { padding:12px 14px; background:linear-gradient(135deg,var(--accent),#2d5c42); display:flex; justify-content:space-between; align-items:center; }
+.resumo-title { font-family:'Syne',sans-serif; font-size:14px; font-weight:800; color:#fff; }
+.resumo-body { padding:14px; font-size:13px; line-height:1.7; color:var(--text); white-space:pre-wrap; }
+.resumo-copy-btn { margin:0 14px 14px; padding:10px; background:var(--green-bg); color:var(--green); border:1px solid rgba(30,107,62,0.2); border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; width:calc(100% - 28px); text-align:center; }
+.hist-resumo-item { padding:10px 14px; border-bottom:1px solid var(--border); cursor:pointer; }
+.hist-resumo-item:last-child { border-bottom:none; }
+.hist-resumo-item:hover { background:var(--surface2); }
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="brand-name">GG · Boa Viagem</div>
+      <div class="brand-sub">Banco Safra · Ag. 14400</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+      <div class="date-pill" id="dateBadge"></div>
+      <span class="sync-pill" id="syncPill">⏳ Conectando…</span>
+    </div>
+  </div>
+  <div class="tabs-wrapper scroll-start" id="tabsWrapper">
+    <div class="tabs" id="tabs"></div>
+    <span class="tabs-scroll-hint">›</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="app"></div>
+
+<!-- MODAL AUDITORIA -->
+<div class="modal-overlay" id="modalAuditoria" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:500;align-items:flex-end" onclick="if(event.target===this)this.classList.remove('open')">
+  <div style="background:var(--surface);border-radius:16px 16px 0 0;width:100%;max-height:80vh;overflow:hidden;display:flex;flex-direction:column">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--accent)">
+      <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:#fff">🔍 Log de Auditoria</span>
+      <button onclick="el('modalAuditoria').classList.remove('open')" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div id="auditBody" style="overflow-y:auto;flex:1;padding-bottom:20px"></div>
+  </div>
+</div>
+
+<div class="bottom-bar">
+  <button class="btn btn-excel" onclick="exportExcel()">📊 Excel</button>
+  <button class="btn btn-s" id="btnMeta" style="display:none" onclick="saveMetas()">💾 Salvar Metas</button>
+  <button class="btn btn-p" onclick="openWA()">📋 WhatsApp</button>
+</div>
+
+<!-- MODAL WA -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div class="mheader">
+      <span class="mtitle">Mensagem WhatsApp</span>
+      <span style="font-size:11px;color:var(--text3)" id="modal-date"></span>
+    </div>
+    <div class="mbody">
+      <div class="wabox" id="waText"></div>
+      <button class="cpbtn" onclick="copyWA()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar para WhatsApp
+      </button>
+      <button class="clbtn" onclick="closeModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+const FB_CFG = {
+  apiKey:"AIzaSyAeO08aZCU8t1P3wVzxx8CnhXzViGPWLAs",
+  authDomain:"safra-boa-viagem.firebaseapp.com",
+  databaseURL:"https://safra-boa-viagem-default-rtdb.firebaseio.com",
+  projectId:"safra-boa-viagem",
+  storageBucket:"safra-boa-viagem.firebasestorage.app",
+  messagingSenderId:"436843298790",
+  appId:"1:436843298790:web:1480b10539a1e27affa027"
+};
+let db = null;
+try {
+  firebase.initializeApp(FB_CFG);
+  db = firebase.database();
+} catch(e){ console.warn('Firebase não disponível:', e); }
+
+const today    = new Date();
+const MONTH_KEY= `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+const BASE     = `agencia/boa_viagem/${MONTH_KEY}`;
+
+// Dias úteis (feriados nacionais + Recife + bancários)
+const HOLIDAYS = new Set([
+  `${today.getFullYear()}-01-01`,`${today.getFullYear()}-04-21`,
+  `${today.getFullYear()}-05-01`,`${today.getFullYear()}-09-07`,
+  `${today.getFullYear()}-10-12`,`${today.getFullYear()}-11-02`,
+  `${today.getFullYear()}-11-15`,`${today.getFullYear()}-11-20`,
+  `${today.getFullYear()}-12-25`,
+  `${today.getFullYear()}-03-04`,`${today.getFullYear()}-03-05`, // Carnaval
+  `${today.getFullYear()}-04-18`, // Sexta Santa
+  `${today.getFullYear()}-06-19`, // Corpus Christi (aprox)
+  `${today.getFullYear()}-06-24`, // São João Recife
+]);
+function isBusinessDay(d){
+  const dow=d.getDay(); if(dow===0||dow===6) return false;
+  const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return !HOLIDAYS.has(k);
+}
+function businessDaysInMonth(year,month){
+  const days=[]; const last=new Date(year,month+1,0).getDate();
+  for(let d=1;d<=last;d++){ const dt=new Date(year,month,d); if(isBusinessDay(dt)) days.push(d); }
+  return days;
+}
+
+
+// ══════════════════════════════════════════════════
+// API KEY ANTHROPIC
+// ══════════════════════════════════════════════════
+const API_KEY_STORAGE = 'anthropic_api_key_v1';
+
+function getApiKey(){ return localStorage.getItem(API_KEY_STORAGE)||''; }
+function saveApiKey(k){ localStorage.setItem(API_KEY_STORAGE, k.trim()); }
+
+function checkApiKey(){
+  const key = getApiKey();
+  if(!key){
+    const k = prompt('Para usar a SecretárIA, informe sua API Key da Anthropic:\n(Será salva apenas no seu dispositivo, nunca compartilhada)\n\nObtê-la em: console.anthropic.com');
+    if(k && k.trim().startsWith('sk-ant-')){
+      saveApiKey(k);
+      return k.trim();
+    } else if(k) {
+      alert('Chave inválida. Deve começar com sk-ant-');
+      return null;
+    }
+    return null;
+  }
+  return key;
+}
+
+async function callAnthropicAPI(system, messages, maxTokens=1000){
+  const key = checkApiKey();
+  if(!key) throw new Error('API Key não configurada. Recarregue e tente novamente.');
+  
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: maxTokens,
+      system: system,
+      messages: messages
+    })
+  });
+  
+  if(!resp.ok){
+    const err = await resp.json().catch(()=>({}));
+    if(resp.status === 401){
+      localStorage.removeItem(API_KEY_STORAGE);
+      throw new Error('API Key inválida ou expirada. Recarregue para inserir novamente.');
+    }
+    throw new Error(err.error?.message || `Erro ${resp.status}`);
+  }
+  
+  return resp.json();
+}
+
+const MGR = ['bruno','camyla','julio','kaio','roberta','sergio','thais','wheldson'];
+const NAMES = {bruno:'Bruno',camyla:'Camyla',julio:'Júlio',kaio:'Kaio',
+               roberta:'Roberta',sergio:'Sérgio',thais:'Thaís',wheldson:'Wheldson'};
+const AT   = ['BS','ARV','Desconto','Outros'];
+const SIMPLES = [{id:'contas',t:'CONTAS'},{id:'consorcio',t:'CONSÓRCIO'},
+                 {id:'collarkin',t:'COLLARKIN'},{id:'captacao',t:'CAPTAÇÃO'},{id:'seguro',t:'SEGURO'}];
+
+const TABS_CFG = [
+  {id:'dash',       l:'📊 Dashboard'},
+  {id:'metas',      l:'🎯 Metas'},
+  {id:'secretaria', l:'🤖 SecretárIA'},
+];
+
+// WA include defaults
+const WA_DEF = {tac:1,chemp:1,giro:1,ativos:1,contas:1,consorcio:1,
+                collarkin:1,captacao:1,seguro:1,viab:1,safrapay:1,credito:1};
+let WA_INC = {...WA_DEF};
+
+let DATA  = {};
+let METAS = {};
+let ACTIVE_TAB = 'dash';
+
+const el  = id => document.getElementById(id);
+const fmt  = n => n ? n.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:2}) : '—';
+const fmtR = n => n ? `R$ ${n.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:2})}` : '—';
+
+function slug(x){
+  return x.toLowerCase()
+    .replace(/[áâãà]/g,'a').replace(/[éê]/g,'e').replace(/í/g,'i')
+    .replace(/[óôõ]/g,'o').replace(/[úü]/g,'u').replace(/ç/g,'c')
+    .replace(/[^a-z0-9]/g,'_');
+}
+function pnRaw(v){
+  const c=String(v||'0').replace(/[^\d.,\-]/g,'').replace(/\./g,'').replace(',','.');
+  return parseFloat(c)||0;
+}
+function gd(gid,key){
+  if(!DATA[gid]) return '';
+  return DATA[gid][key] ?? '';
+}
+function pnd(gid,key){ return pnRaw(gd(gid,key)); }
+function getMes(gid,base){ return pnd(gid,base+'_acc')+pnd(gid,base+'_dia')+pnd(gid,base+'_adj'); }
+function fmtDate(s){ if(!s) return '—'; const[y,m,d]=s.split('-'); return `${d}/${m}/${y}`; }
+function showToast(msg){ const t=el('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600); }
+
+function fmtStatus(s){
+  const m={analise_sgn:'Análise SGN',sgn_aprovado:'SGN aprovado',necessario_rebate:'Necessário rebate',
+    parado_especialista:'Parado c/ especialista',parado_gg:'Parado c/ GG',em_implantacao:'Em implantação',
+    ja_vopando:'Já vopando',poc_analise:'POC em análise',poc_aprovada:'POC aprovada',
+    aguardando_doc:'Aguardando doc.',sgn_analise:'SGN em análise',assinatura:'Em assinatura',
+    enviado_liberacao:'Enviado liberação',outros:'Outros'};
+  return m[s]||s;
+}
+
+// ── Meta bar ──
+function metaBar(real, meta, prefix){
+  if(!meta) return '';
+  const pct = Math.min((real/meta)*100, 150);
+  const pctReal = (real/meta)*100;
+  const cls = pctReal>=100?'over':pctReal<50?'low':'';
+  const pctCls = pctReal>=100?'':pctReal<50?'low':'warn';
+  return `<div class="meta-row-wrap">
+    <div class="meta-top">
+      <span class="meta-lbl">🎯 Meta: ${fmtR(meta)}</span>
+      <span class="meta-pct ${pctCls}">${pctReal.toFixed(1)}%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill ${cls}" style="width:${Math.min(pct,100)}%"></div></div>
+  </div>`;
+}
+
+// ── WA toggle ──
+function waToggleUI(sec){
+  return `<div class="wa-row">
+    <span class="wa-label">📲 Incluir no WhatsApp</span>
+    <label class="toggle-switch">
+      <input type="checkbox" ${WA_INC[sec]?'checked':''} onchange="WA_INC['${sec}']=this.checked?1:0">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>`;
+}
+
+// ── Ger status pill ──
+function gerStatus(gid){
+  const d=DATA[gid];
+  if(!d) return {cls:'offline',lbl:'⚪ Offline'};
+  return d.dia_concluido ? {cls:'done',lbl:'✅ OK'} : {cls:'pending',lbl:'⏳ Pendente'};
+}
+
+// ══════════════════════════════════════════════════
+// BUILD SHELL
+// ══════════════════════════════════════════════════
+function buildShell(){
+  el('tabs').innerHTML = TABS_CFG.map((t,i)=>
+    `<button class="tab ${i===0?'active':''}" onclick="swTab('${t.id}',this)">${t.l}</button>`
+  ).join('');
+  el('app').innerHTML = TABS_CFG.map((t,i)=>
+    `<div class="section ${i===0?'active':''}" id="sec-${t.id}"></div>`
+  ).join('');
+}
+
+window.swTab = function(id, btn){
+  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  el('sec-'+id).classList.add('active'); btn.classList.add('active');
+  btn.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  ACTIVE_TAB = id;
+  el('btnMeta').style.display = id==='metas' ? '' : 'none';
+};
+
+// ══════════════════════════════════════════════════
+// HELPER — count produções de listas
+// ══════════════════════════════════════════════════
+function getProds(gid, listKey){
+  const raw=gd(gid,listKey);
+  const list=raw?JSON.parse(raw):[];
+  return { pipes:list.filter(x=>x.tipo==='pipe'), prods:list.filter(x=>x.tipo==='prod'), all:list };
+}
+
+// Soma valor R$ das produções de crédito
+function getCreditoValor(gid){
+  return getProds(gid,'credito_list').prods.reduce((s,v)=>s+pnRaw(v.valor),0);
+}
+
+// Soma VOP das produções de safrapay
+function getSafrapayVop(gid){
+  return getProds(gid,'safrapay_list').prods.reduce((s,v)=>s+pnRaw(v.vop),0);
+}
+
+// ══════════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
+// DASHBOARD AVANÇADO GG
+// ══════════════════════════════════════════════════
+
+// Estado dos filtros
+let DASH_MODE = 'gerente';       // 'gerente' | 'ranking'
+let DASH_GERENTES = [...MGR];    // todos por padrão
+let DASH_PRODUTOS = ['tac'];     // produto(s) selecionados
+let DASH_AI_LOADING = false;
+
+const PRODUTOS_CFG = [
+  { id:'tac',       lbl:'TAC',              fmt_: fmtR, valFn: gid=>getMes(gid,'tac'), metaKey:'tac' },
+  { id:'chemp',     lbl:'CHEMP',            fmt_: fmtR, valFn: gid=>pnd(gid,'chemp_dia'), metaKey:'chemp',
+    customCard: (gid)=>{
+      const ant   = pnd(gid,'chemp_ant');
+      const dia   = pnd(gid,'chemp_dia');
+      const delta = dia - ant;
+      const dColor = delta>=0?'var(--green)':'var(--red)';
+      const dSinal = delta>=0?'+':'';
+      return `<div style="padding:12px 14px;border-bottom:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">💼 CHEMP</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <div style="text-align:center;background:var(--surface2);padding:8px;border-radius:8px">
+            <div style="font-size:9px;color:var(--text3);margin-bottom:3px">Saldo Ant.</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700">${fmtR(ant)||'—'}</div>
+          </div>
+          <div style="text-align:center;background:var(--surface2);padding:8px;border-radius:8px">
+            <div style="font-size:9px;color:var(--text3);margin-bottom:3px">Saldo Atual</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:var(--accent)">${fmtR(dia)||'—'}</div>
+          </div>
+          <div style="text-align:center;background:var(--surface2);padding:8px;border-radius:8px">
+            <div style="font-size:9px;color:var(--text3);margin-bottom:3px">Δ Incremento</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:${dColor}">${ant||dia?`${dSinal}${fmtR(delta)}`:'—'}</div>
+          </div>
+        </div>
+      </div>`;
+    }
+  },
+  { id:'giro',      lbl:'Giro de Carteira', fmt_: v=>`${Math.round(v)||0}`, valFn: gid=>getMes(gid,'giro'), metaKey:'giro' },
+  { id:'ativos',    lbl:'Ativos',           fmt_: fmtR, valFn: gid=>{ let t=0; AT.forEach(p=>t+=getMes(gid,`at_${slug(p)}`)); return t; }, metaKey:'ativos' },
+  { id:'contas',    lbl:'Contas',           fmt_: v=>`${Math.round(v)||0}`, valFn: gid=>pnd(gid,'contas_amarela_acc')+pnd(gid,'contas_verde_acc')+pnd(gid,'contas_outros_acc'), metaKey:'contas' },
+  { id:'consorcio', lbl:'Consórcio',        fmt_: fmtR, valFn: gid=>getMes(gid,'consorcio'), metaKey:'consorcio' },
+  { id:'collarkin', lbl:'Collarkin',        fmt_: fmtR, valFn: gid=>getMes(gid,'collarkin'), metaKey:'collarkin' },
+  { id:'captacao',  lbl:'Captação',         fmt_: fmtR, valFn: gid=>getMes(gid,'captacao'), metaKey:'captacao' },
+  { id:'seguro',    lbl:'Seguro',           fmt_: fmtR, valFn: gid=>{ const l=DATA[gid]?.seguro_list?JSON.parse(DATA[gid].seguro_list):[]; return l.reduce((s,v)=>s+pnRaw(v.valor),0); }, metaKey:'seguro' },
+  { id:'viab',      lbl:'Viabilizados',     fmt_: v=>`${v} prod`, valFn: gid=>getProds(gid,'viab_list').prods.length, metaKey:'viab' },
+  { id:'safrapay',  lbl:'Safrapay VOP',     fmt_: fmtR, valFn: gid=>getSafrapayVop(gid), metaKey:'safrapay_vop' },
+  { id:'credito',   lbl:'Crédito BS',       fmt_: fmtR, valFn: gid=>getCreditoValor(gid), metaKey:'credito' },
+];
+
+function getRealizado(gid, prodId){
+  const p = PRODUTOS_CFG.find(x=>x.id===prodId);
+  return p ? p.valFn(gid) : 0;
+}
+function getMeta(gid, prodId){
+  const p = PRODUTOS_CFG.find(x=>x.id===prodId);
+  if(!p) return 0;
+  return METAS[gid]?.[p.metaKey] || 0;
+}
+function getPct(real, meta){ return meta>0 ? Math.min((real/meta)*100,999) : 0; }
+function getSemaforoColor(pct){
+  if(pct>=80) return 'var(--green)';
+  if(pct>=50) return 'var(--orange)';
+  return 'var(--red)';
+}
+function getSemaforoBg(pct){
+  if(pct>=80) return 'var(--green-bg)';
+  if(pct>=50) return 'var(--orange-bg)';
+  return 'var(--red-bg)';
+}
+function getSemaforoEmoji(pct){
+  if(pct>=100) return '🏆';
+  if(pct>=80) return '🟢';
+  if(pct>=50) return '🟡';
+  return '🔴';
+}
+
+// Dias úteis
+function getDiasUteisPassados(){
+  const allDays = businessDaysInMonth(today.getFullYear(), today.getMonth());
+  return allDays.filter(d=>d<=today.getDate()).length;
+}
+function getTotalDiasUteis(){
+  return businessDaysInMonth(today.getFullYear(), today.getMonth()).length;
+}
+function getProjecao(real, meta){
+  const du = getDiasUteisPassados();
+  const tot = getTotalDiasUteis();
+  if(!du || !tot || !meta) return null;
+  const proj = (real/du)*tot;
+  return proj;
+}
+
+function rDash(){
+  let h = `<div style="padding:0 14px">`;
+
+  // ── FILTROS com auditoria discreta ──
+  h += buildDashFilters();
+
+  if(DASH_MODE === 'gerente'){
+    h += buildDashGerente();
+  } else {
+    h += buildDashRanking();
+  }
+
+  h += `</div>`;
+  el('sec-dash').innerHTML = h;
+}
+
+function buildDashFilters(){
+  const modeGer = DASH_MODE==='gerente';
+  let h = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow)">
+    <!-- Toggle de modo + auditoria discreta -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border);position:relative">
+      <button onclick="setDashMode('gerente')" style="padding:10px;font-size:12px;font-weight:700;border:none;cursor:pointer;transition:all .2s;background:${modeGer?'var(--accent)':'var(--surface)'};color:${modeGer?'#fff':'var(--text2)'}" title="Visão por gerente">👤 Por Gerente</button>
+      <button onclick="setDashMode('ranking')" style="padding:10px;font-size:12px;font-weight:700;border:none;cursor:pointer;transition:all .2s;background:${!modeGer?'var(--accent)':'var(--surface)'};color:${!modeGer?'#fff':'var(--text2)'}" title="Visão de ranking por produto">🏆 Ranking</button>
+      <!-- Auditoria discreta: hover no desktop, long press no mobile -->
+      <div id="audit_trigger" style="position:absolute;bottom:2px;right:6px;opacity:0;transition:opacity 0.3s;cursor:pointer;font-size:9px;color:var(--text3)"
+        onmouseenter="this.style.opacity='1'"
+        onmouseleave="this.style.opacity='0'"
+        ontouchstart="startAuditLongPress(event)"
+        ontouchend="cancelAuditLongPress()"
+        onclick="abrirAuditoria()"
+        title="Log de auditoria">🔍</div>
+    </div>`;
+
+  if(DASH_MODE === 'gerente'){
+    // Filtro de gerentes
+    h += `<div style="padding:10px 14px">
+      <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Gerentes</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+        <button onclick="setDashGerentes('all')" style="padding:4px 10px;border-radius:20px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:${DASH_GERENTES.length===MGR.length?'var(--accent)':'var(--surface)'};color:${DASH_GERENTES.length===MGR.length?'#fff':'var(--text2)'}">Todos</button>
+        ${MGR.map(gid=>`<button onclick="toggleDashGerente('${gid}')" style="padding:4px 10px;border-radius:20px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:${DASH_GERENTES.includes(gid)?'var(--accent)':'var(--surface)'};color:${DASH_GERENTES.includes(gid)?'#fff':'var(--text2)'}">${NAMES[gid]}</button>`).join('')}
+      </div>
+      <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Produtos</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <button onclick="setDashProdutos('all')" style="padding:4px 10px;border-radius:20px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:${DASH_PRODUTOS.length===PRODUTOS_CFG.length?'var(--accent)':'var(--surface)'};color:${DASH_PRODUTOS.length===PRODUTOS_CFG.length?'#fff':'var(--text2)'}">Todos</button>
+        ${PRODUTOS_CFG.map(p=>`<button onclick="toggleDashProduto('${p.id}')" style="padding:4px 10px;border-radius:20px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:${DASH_PRODUTOS.includes(p.id)?'var(--accent)':'var(--surface)'};color:${DASH_PRODUTOS.includes(p.id)?'#fff':'var(--text2)'}">${p.lbl}</button>`).join('')}
+      </div>
+    </div>`;
+  } else {
+    // Filtro de produtos para ranking
+    h += `<div style="padding:10px 14px">
+      <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Produtos para o Ranking</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <button onclick="setDashProdutos('all')" style="padding:4px 10px;border-radius:20px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:${DASH_PRODUTOS.length===PRODUTOS_CFG.length?'var(--accent)':'var(--surface)'};color:${DASH_PRODUTOS.length===PRODUTOS_CFG.length?'#fff':'var(--text2)'}">Todos</button>
+        ${PRODUTOS_CFG.map(p=>`<button onclick="toggleDashProduto('${p.id}')" style="padding:4px 10px;border-radius:20px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:${DASH_PRODUTOS.includes(p.id)?'var(--accent)':'var(--surface)'};color:${DASH_PRODUTOS.includes(p.id)?'#fff':'var(--text2)'}">${p.lbl}</button>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  h += `</div>`;
+  return h;
+}
+
+// ── Controles de filtro ──
+function setDashMode(mode){ DASH_MODE=mode; rDash(); }
+function setDashGerentes(v){ DASH_GERENTES = v==='all' ? [...MGR] : [v]; rDash(); }
+function toggleDashGerente(gid){
+  if(DASH_GERENTES.includes(gid)){
+    if(DASH_GERENTES.length===1) return; // ao menos 1
+    DASH_GERENTES = DASH_GERENTES.filter(x=>x!==gid);
+  } else { DASH_GERENTES.push(gid); }
+  rDash();
+}
+function setDashProdutos(v){ DASH_PRODUTOS = v==='all' ? PRODUTOS_CFG.map(p=>p.id) : [v]; rDash(); }
+function toggleDashProduto(pid){
+  if(DASH_PRODUTOS.includes(pid)){
+    if(DASH_PRODUTOS.length===1) return;
+    DASH_PRODUTOS = DASH_PRODUTOS.filter(x=>x!==pid);
+  } else { DASH_PRODUTOS.push(pid); }
+  rDash();
+}
+
+// ── Visão por Gerente ──
+function buildDashGerente(){
+  const duPass = getDiasUteisPassados();
+  const duTot  = getTotalDiasUteis();
+  let h = '';
+
+  // Alertas globais
+  const alertas = buildAlertasGlobais();
+  if(alertas) h += alertas;
+
+  DASH_GERENTES.forEach(gid=>{
+    const prods = DASH_PRODUTOS.map(pid=>PRODUTOS_CFG.find(p=>p.id===pid)).filter(Boolean);
+    const st = gerStatus(gid);
+    const ts = DATA[gid]?._ultima_atualizacao;
+    let timeStr='—';
+    if(ts){ const dt=new Date(ts); timeStr=`${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`; }
+
+    h += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:14px;overflow:hidden;box-shadow:var(--shadow)">
+      <!-- Header do gerente -->
+      <div style="background:var(--accent);padding:12px 14px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#fff">${NAMES[gid]}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px">Atualizado: ${timeStr}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="sc-badge ${st.cls}">${st.lbl}</span>
+          <a href="gerente_${gid}.html" target="_blank" style="font-size:10px;color:var(--gold-light);text-decoration:none;background:rgba(255,255,255,0.1);padding:4px 8px;border-radius:12px;border:1px solid rgba(255,255,255,0.2)" title="Abrir app do gerente">🔗 App</a>
+        </div>
+      </div>`;
+
+    // Cards de produto com barra horizontal
+    prods.forEach(p=>{
+      // CHEMP tem card customizado
+      if(p.customCard){ h += p.customCard(gid); return; }
+
+      const real = p.valFn(gid);
+      const meta = getMeta(gid, p.id);
+      const pct  = getPct(real, meta);
+      const gap  = meta > 0 ? Math.max(meta-real,0) : null;
+      const proj = getProjecao(real, meta);
+      const color = getSemaforoColor(pct);
+      const bg    = getSemaforoBg(pct);
+      const emoji = getSemaforoEmoji(pct);
+
+      h += `<div style="padding:12px 14px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:11px;font-weight:700;color:var(--text2)">${emoji} ${p.lbl}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:800;color:var(--accent)">${p.fmt_(real)}</span>
+        </div>`;
+
+      if(meta>0){
+        h += `<div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:6px">
+          <div style="height:100%;width:${Math.min(pct,100)}%;background:${color};border-radius:3px;transition:width .5s"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
+          <span>Meta: ${p.fmt_(meta)} · <strong style="color:${color}">${pct.toFixed(1)}%</strong></span>
+          ${gap>0 ? `<span style="color:var(--orange)">GAP: ${p.fmt_(gap)}</span>` : `<span style="color:var(--green);font-weight:700">✅ Meta!</span>`}
+        </div>`;
+        if(proj!==null){
+          const projPct = meta>0?(proj/meta*100):0;
+          const projColor = projPct>=100?'var(--green)':projPct>=80?'var(--orange)':'var(--red)';
+          h += `<div style="margin-top:4px;font-size:10px;color:var(--text3)">📈 Projeção: <strong style="color:${projColor}">${p.fmt_(proj)}</strong> (${projPct.toFixed(0)}% da meta)</div>`;
+        }
+      } else {
+        h += `<div style="font-size:10px;color:var(--text3);font-style:italic">⏳ Sem meta definida</div>`;
+      }
+
+      h += `</div>`;
+    });
+
+    // Gráfico de barras horizontal (SVG inline)
+    if(prods.length > 1){
+      h += buildBarChart(gid, prods);
+    }
+
+    h += `</div>`; // fecha card do gerente
+  });
+
+  return h;
+}
+
+// ── Gráfico de barras SVG horizontal ──
+function buildBarChart(gid, prods){
+  const W=320, barH=20, gap=8, padL=90, padR=60, padTop=10;
+  const H = padTop + prods.length*(barH+gap);
+  const maxPct = 100;
+
+  let svg = `<div style="padding:12px 14px;border-top:1px solid var(--border);overflow-x:auto">
+    <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">% Atingimento por Produto</div>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px">`;
+
+  prods.forEach((p,i)=>{
+    const real = p.valFn(gid);
+    const meta = getMeta(gid, p.id);
+    const pct  = Math.min(getPct(real,meta),100);
+    const color= getSemaforoColor(pct);
+    const y    = padTop + i*(barH+gap);
+    const barW = Math.round(((W-padL-padR)/100)*pct);
+
+    svg += `<text x="${padL-4}" y="${y+barH*0.72}" text-anchor="end" font-size="9" fill="#6b6560" font-family="IBM Plex Sans">${p.lbl.substring(0,12)}</text>`;
+    svg += `<rect x="${padL}" y="${y}" width="${W-padL-padR}" height="${barH}" rx="4" fill="#e2ddd6"/>`;
+    svg += `<rect x="${padL}" y="${y}" width="${barW||2}" height="${barH}" rx="4" fill="${color}"/>`;
+    svg += `<text x="${padL+barW+4}" y="${y+barH*0.72}" font-size="9" fill="${color}" font-weight="700" font-family="IBM Plex Mono">${pct.toFixed(0)}%</text>`;
+  });
+
+  svg += `</svg></div>`;
+  return svg;
+}
+
+// ── Alertas globais ──
+function buildAlertasGlobais(){
+  const alertas = [];
+  const duPass = getDiasUteisPassados();
+  const duTot  = getTotalDiasUteis();
+
+  DASH_GERENTES.forEach(gid=>{
+    // Sem atualização há 1+ dia útil
+    const st = gerStatus(gid);
+    if(st.cls==='badge-off') alertas.push({ tipo:'danger', msg:`⚠️ <strong>${NAMES[gid]}</strong> está offline — sem atualização` });
+
+    // Abaixo do ritmo em TAC
+    const real = getMes(gid,'tac');
+    const meta = getMeta(gid,'tac');
+    if(meta && duPass && duTot){
+      const ritmoEsp = (meta/duTot)*duPass;
+      if(real < ritmoEsp*0.7) alertas.push({ tipo:'warn', msg:`📉 <strong>${NAMES[gid]}</strong> está abaixo do ritmo em TAC (${((real/ritmoEsp)*100).toFixed(0)}% do esperado)` });
+    }
+  });
+
+  if(!alertas.length) return '';
+  return `<div style="margin-bottom:12px">
+    ${alertas.map(a=>`<div style="background:${a.tipo==='danger'?'var(--red-bg)':'var(--orange-bg)'};border:1px solid ${a.tipo==='danger'?'rgba(192,57,43,0.2)':'rgba(196,107,0,0.2)'};border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:12px;color:var(--text)">${a.msg}</div>`).join('')}
+  </div>`;
+}
+
+// ── Visão de Ranking ──
+function buildDashRanking(){
+  let h = '';
+  const prods = DASH_PRODUTOS.map(pid=>PRODUTOS_CFG.find(p=>p.id===pid)).filter(Boolean);
+
+  prods.forEach(p=>{
+    const ranking = MGR.map(gid=>({
+      gid, nome:NAMES[gid],
+      val: p.valFn(gid),
+      meta: getMeta(gid,p.id),
+    })).sort((a,b)=>b.val-a.val);
+
+    const maxVal = ranking[0]?.val || 1;
+
+    h += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:14px;overflow:hidden;box-shadow:var(--shadow)">
+      <div style="background:var(--accent);padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:#fff">🏆 ${p.lbl}</span>
+        <span style="font-size:10px;color:rgba(255,255,255,0.5)">${getDiasUteisPassados()}/${getTotalDiasUteis()} dias úteis</span>
+      </div>`;
+
+    ranking.forEach((r,i)=>{
+      const pct    = getPct(r.val,r.meta);
+      const color  = getSemaforoColor(pct);
+      const barPct = maxVal>0?Math.round((r.val/maxVal)*100):0;
+      const medal  = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+      const gap    = r.meta>0?Math.max(r.meta-r.val,0):null;
+
+      h += `<div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;width:28px;flex-shrink:0;color:${i===0?'#FFD700':i===1?'#C0C0C0':i===2?'#CD7F32':'var(--text3)'}">${medal||`${i+1}º`}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:12px;font-weight:700">${r.nome}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:var(--accent)">${p.fmt_(r.val)}</span>
+          </div>
+          <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:4px">
+            <div style="height:100%;width:${barPct}%;background:${color};border-radius:3px"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
+            ${r.meta>0
+              ? `<span>${pct.toFixed(1)}% da meta (${p.fmt_(r.meta)})</span>${gap>0?`<span style="color:var(--orange)">GAP: ${p.fmt_(gap)}</span>`:`<span style="color:var(--green)">✅</span>`}`
+              : `<span style="font-style:italic">Sem meta</span>`}
+          </div>
+        </div>
+      </div>`;
+    });
+
+    // Total do produto
+    const total = ranking.reduce((s,r)=>s+r.val,0);
+    const totalMeta = ranking.reduce((s,r)=>s+r.meta,0);
+    const totalPct = getPct(total,totalMeta);
+    h += `<div style="padding:8px 14px;background:var(--surface2);display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:11px;font-weight:700;color:var(--text2)">Total Agência</span>
+      <div style="text-align:right">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:800;color:var(--accent)">${p.fmt_(total)}</div>
+        ${totalMeta>0?`<div style="font-size:10px;color:${getSemaforoColor(totalPct)};font-weight:700">${totalPct.toFixed(1)}% da meta</div>`:''}
+      </div>
+    </div>
+    </div>`;
+  });
+
+  return h;
+}
+
+// ── Análise IA ──
+async function gerarAnaliseIA(gid){
+  const div = el(`ia_${gid}`);
+  if(!div) return;
+  div.innerHTML = `<div style="color:var(--purple);font-style:italic">🤖 Analisando dados...</div>`;
+
+  const prods = DASH_PRODUTOS.map(pid=>PRODUTOS_CFG.find(p=>p.id===pid)).filter(Boolean);
+  const duPass = getDiasUteisPassados();
+  const duTot  = getTotalDiasUteis();
+
+  // Montar contexto para a IA
+  const linhas = prods.map(p=>{
+    const real = p.valFn(gid);
+    const meta = getMeta(gid, p.id);
+    const pct  = getPct(real,meta);
+    const proj = getProjecao(real,meta);
+    return `${p.lbl}: realizado=${p.fmt_(real)}, meta=${meta?p.fmt_(meta):'sem meta'}, atingimento=${meta?pct.toFixed(1)+'%':'—'}, projeção=${proj?p.fmt_(proj):'—'}`;
+  }).join('\n');
+
+  const prompt = `Você é um consultor especialista em gestão comercial bancária. Analise os dados de produção do gerente ${NAMES[gid]} referentes ao mês atual no Banco Safra, Agência Boa Viagem.
+
+Dados (${duPass} de ${duTot} dias úteis passados):
+${linhas}
+
+Escreva uma análise executiva em português, com:
+1. Avaliação geral do desempenho (2 frases)
+2. Pontos de atenção ou alertas (máx 2)
+3. Uma frase motivacional reflexiva e profunda que provoque reflexão sobre a performance
+
+Seja direto, específico e use os números. Máximo 150 palavras.`;
+
+  try {
+    const data = await callAnthropicAPI('', [{ role:'user', content: prompt }], 400);
+    const texto = data.content?.[0]?.text || 'Não foi possível gerar análise.';
+    div.innerHTML = `<div style="background:var(--purple-bg);border:1px solid rgba(91,45,142,0.15);border-radius:8px;padding:12px;font-size:12px;line-height:1.6;color:var(--text);white-space:pre-wrap">${texto}</div>`;
+  } catch(e){
+    div.innerHTML = `<div style="color:var(--red);font-size:11px">Erro ao conectar com IA: ${e.message}</div>`;
+  }
+}
+
+
+// ══════════════════════════════════════════════════
+// TAC
+// ══════════════════════════════════════════════════
+function rTAC(){
+  let total=0;
+  let h=`<div class="card">
+    <div class="card-header"><span class="card-title">TAC — POR GERENTE</span></div>
+    <div class="legend"><div class="legend-item"><div class="dot g"></div><span>Acumulado no mês</span></div></div>`;
+  MGR.forEach(gid=>{
+    const mes=getMes(gid,'tac'); total+=mes;
+    const st=gerStatus(gid);
+    const meta=METAS[gid]?.tac||0;
+    h+=`<div class="ger-block">
+      <div class="ger-head">
+        <span class="ger-head-name">${NAMES[gid]}</span>
+        <span class="ger-status ${st.cls}">${st.lbl}</span>
+      </div>
+      <div class="row">
+        <span class="lbl">Hoje</span><span class="val neu">${fmtR(pnd(gid,'tac_dia'))}</span>
+      </div>
+      <div class="row tr"><span class="lbl t">Mês</span><span class="val">${fmtR(mes)}</span></div>
+      ${metaBar(mes,meta,'tac')}
+    </div>`;
+  });
+  h+=`<div class="row tr"><span class="lbl t">TOTAL AGÊNCIA</span><span class="val total">${fmtR(total)}</span></div>`;
+  h+=`</div>${waToggleUI('tac')}`;
+  el('sec-tac').innerHTML=h;
+}
+
+// ══════════════════════════════════════════════════
+// CHEMP
+// ══════════════════════════════════════════════════
+function rCHEMP(){
+  let h=`<div class="card">
+    <div class="card-header"><span class="card-title">CHEMP — POR GERENTE</span></div>`;
+  MGR.forEach(gid=>{
+    const ant=pnd(gid,'chemp_ant'),dia=pnd(gid,'chemp_dia'),delta=dia-ant;
+    const novos=gd(gid,'chemp_novos');
+    h+=`<div class="ger-block">
+      <div class="ger-head"><span class="ger-head-name">${NAMES[gid]}</span></div>
+      <div class="row"><span class="lbl">Saldo Mês Anterior</span><span class="val neu">${fmtR(ant)}</span></div>
+      <div class="row"><span class="lbl">Saldo Dia Atual</span><span class="val">${fmtR(dia)}</span></div>
+      <div class="row"><span class="lbl">Incremento (Δ)</span>
+        <span class="val ${delta<0?'neg':''}">${delta>=0?'▲':'▼'} ${fmtR(Math.abs(delta))}</span>
+      </div>
+      <div class="row tr"><span class="lbl t">Novos Limites</span><span class="val">${novos||'—'}</span></div>
+    </div>`;
+  });
+  h+=`</div>${waToggleUI('chemp')}`;
+  el('sec-chemp').innerHTML=h;
+}
+
+// ══════════════════════════════════════════════════
+// GIRO
+// ══════════════════════════════════════════════════
+function rGiro(){
+  let total=0;
+  let h=`<div class="card">
+    <div class="card-header"><span class="card-title">GIRO DE CARTEIRA</span><span class="card-subtitle">quantidade</span></div>
+    <div class="legend"><div class="legend-item"><div class="dot g"></div><span>Acumulado no mês</span></div></div>`;
+  MGR.forEach(gid=>{
+    const mes=getMes(gid,'giro'); total+=mes;
+    const meta=METAS[gid]?.giro||0;
+    const st=gerStatus(gid);
+    h+=`<div class="ger-block">
+      <div class="ger-head"><span class="ger-head-name">${NAMES[gid]}</span><span class="ger-status ${st.cls}">${st.lbl}</span></div>
+      <div class="row"><span class="lbl">Hoje</span><span class="val neu">${pnd(gid,'giro_dia')||'—'}</span></div>
+      <div class="row tr"><span class="lbl t">Mês</span><span class="val">${Math.round(mes)||'—'}</span></div>
+      ${metaBar(mes,meta,'giro')}
+    </div>`;
+  });
+  h+=`<div class="row tr"><span class="lbl t">TOTAL</span><span class="val total">${Math.round(total)||'—'}</span></div>`;
+  h+=`</div>${waToggleUI('giro')}`;
+  el('sec-giro').innerHTML=h;
+}
+
+// ══════════════════════════════════════════════════
+// ATIVOS
+// ══════════════════════════════════════════════════
+function rAtivos(){
+  let agT=0;
+  let h=`<div class="card">
+    <div class="card-header"><span class="card-title">ATIVOS — POR GERENTE</span></div>
+    <div class="legend"><div class="legend-item"><div class="dot g"></div><span>Acumulado no mês</span></div></div>`;
+  MGR.forEach(gid=>{
+    let mT=0; AT.forEach(p=>{ mT+=getMes(gid,`at_${slug(p)}`); }); agT+=mT;
+    const meta=METAS[gid]?.ativos||0;
+    const st=gerStatus(gid);
+    h+=`<div class="ger-block">
+      <div class="ger-head"><span class="ger-head-name">${NAMES[gid]}</span><span class="ger-status ${st.cls}">${st.lbl}</span></div>`;
+    AT.forEach(p=>{ h+=`<div class="row"><span class="lbl">${p}</span><span class="val">${fmtR(getMes(gid,`at_${slug(p)}`))}</span></div>`; });
+    h+=`<div class="row tr"><span class="lbl t">Total</span><span class="val total">${fmtR(mT)}</span></div>
+      ${metaBar(mT,meta,'ativos')}
+    </div>`;
+  });
+  h+=`<div class="row tr"><span class="lbl t">TOTAL AGÊNCIA</span><span class="val total">${fmtR(agT)}</span></div>`;
+  h+=`</div>${waToggleUI('ativos')}`;
+  el('sec-ativos').innerHTML=h;
+}
+
+// ══════════════════════════════════════════════════
+// SIMPLES
+// ══════════════════════════════════════════════════
+function rSimples({id,t}){
+  let total=0;
+  let h=`<div class="card">
+    <div class="card-header"><span class="card-title">${t} — POR GERENTE</span></div>
+    <div class="legend"><div class="legend-item"><div class="dot g"></div><span>Acumulado no mês</span></div></div>`;
+  MGR.forEach(gid=>{
+    const mes=getMes(gid,id); total+=mes;
+    const meta=METAS[gid]?.[id]||0;
+    const st=gerStatus(gid);
+    h+=`<div class="ger-block">
+      <div class="ger-head"><span class="ger-head-name">${NAMES[gid]}</span><span class="ger-status ${st.cls}">${st.lbl}</span></div>
+      <div class="row"><span class="lbl">Hoje</span><span class="val neu">${fmtR(pnd(gid,id+'_dia'))}</span></div>
+      <div class="row tr"><span class="lbl t">Mês</span><span class="val">${fmtR(mes)}</span></div>
+      ${metaBar(mes,meta,id)}
+    </div>`;
+  });
+  h+=`<div class="row tr"><span class="lbl t">TOTAL</span><span class="val total">${fmtR(total)}</span></div>`;
+  h+=`</div>${waToggleUI(id)}`;
+  el(`sec-${id}`).innerHTML=h;
+}
+
+// ══════════════════════════════════════════════════
+// LISTAS (Viab / Safrapay / Crédito)
+// ══════════════════════════════════════════════════
+function rLista(secId, title, listKey, headerCls, emptyIcon, renderDetail){
+  let tPipe=0,tProd=0;
+  let h=`<div class="card">
+    <div class="card-header ${headerCls}">
+      <span class="card-title">${title} — POR GERENTE</span>
+      <span class="card-count" id="${secId}_count">…</span>
+    </div>`;
+  MGR.forEach(gid=>{
+    const {pipes,prods,all}=getProds(gid,listKey);
+    tPipe+=pipes.length; tProd+=prods.length;
+    const st=gerStatus(gid);
+    const meta=METAS[gid]?.[secId]||0;
+    const real=prods.length;
+    h+=`<div class="ger-block">
+      <div class="ger-head">
+        <span class="ger-head-name">${NAMES[gid]}</span>
+        <span class="ger-status ${st.cls}">${st.lbl}</span>
+      </div>
+      <div class="row">
+        <span class="lbl">🔵 Pipe</span><span class="val neu">${pipes.length}</span>
+      </div>
+      <div class="row tr"><span class="lbl t">✅ Produção (realizado)</span><span class="val">${prods.length}</span></div>
+      ${metaBar(real, meta, secId)}`;
+    if(!all.length){ h+=`<div class="empty"><div class="empty-icon">${emptyIcon}</div>Nenhum cliente.</div>`; }
+    else all.forEach(v=>{ h+=renderDetail(v); });
+    h+=`</div>`;
+  });
+  h+=`<div class="row tr"><span class="lbl t">TOTAL: ${tProd} prod · ${tPipe} pipe</span></div>`;
+  h+=`</div>${waToggleUI(secId)}`;
+  el(`sec-${secId}`).innerHTML=h;
+  const cnt=el(`${secId}_count`); if(cnt) cnt.textContent=`🔵 ${tPipe} · ✅ ${tProd}`;
+}
+
+function rViab(){
+  let tPipe=0,tProd=0;
+  let h=`<div class="card">
+    <div class="card-header"><span class="card-title">VIABILIZADOS — POR GERENTE</span>
+      <span class="card-count" id="viab_count">…</span>
+    </div>`;
+  MGR.forEach(gid=>{
+    const {pipes,prods,all}=getProds(gid,'viab_list');
+    tPipe+=pipes.length; tProd+=prods.length;
+    const st=gerStatus(gid);
+    const meta=METAS[gid]?.viab||0;
+    h+=`<div class="ger-block">
+      <div class="ger-head"><span class="ger-head-name">${NAMES[gid]}</span><span class="ger-status ${st.cls}">${st.lbl}</span></div>
+      <div class="row"><span class="lbl">🔵 Pipe</span><span class="val neu">${pipes.length}</span></div>
+      <div class="row tr"><span class="lbl t">✅ Produção (realizado)</span><span class="val">${prods.length}</span></div>
+      ${metaBar(prods.length, meta, 'viab')}`;
+    if(!all.length){ h+=`<div class="empty"><div class="empty-icon">👥</div>Nenhum cliente.</div>`; }
+    else all.forEach(v=>{ h+=`<div class="cm">
+      <div class="cm-top"><span class="cm-name">${v.cliente||'—'}</span><span class="cm-badge ${v.tipo||'pipe'}">${v.tipo==='prod'?'✅ Prod':'🔵 Pipe'}</span></div>
+      <div class="cm-detail">${v.viabiliza||''} ${v.valor?'· R$ '+v.valor:''} ${v.data?'· '+fmtDate(v.data):''}</div>
+    </div>`; });
+    h+=`</div>`;
+  });
+  h+=`<div class="row tr"><span class="lbl t">TOTAL: ${tProd} prod · ${tPipe} pipe</span></div>`;
+  h+=`</div>${waToggleUI('viab')}`;
+  el('sec-viab').innerHTML=h;
+  const cnt=el('viab_count'); if(cnt) cnt.textContent=`🔵 ${tPipe} · ✅ ${tProd}`;
+}
+
+function rSafrapay(){
+  let tPipe=0,tProd=0,tVop=0;
+  let h=`<div class="card">
+    <div class="card-header purple"><span class="card-title">SAFRAPAY — POR GERENTE</span>
+      <span class="card-count" id="safrapay_count">…</span>
+    </div>`;
+  MGR.forEach(gid=>{
+    const {pipes,prods,all}=getProds(gid,'safrapay_list');
+    tPipe+=pipes.length; tProd+=prods.length;
+    const vop=getSafrapayVop(gid); tVop+=vop;
+    const st=gerStatus(gid);
+    const metaQtd=METAS[gid]?.safrapay_qtd||0;
+    const metaVop=METAS[gid]?.safrapay_vop||0;
+    h+=`<div class="ger-block">
+      <div class="ger-head"><span class="ger-head-name">${NAMES[gid]}</span><span class="ger-status ${st.cls}">${st.lbl}</span></div>
+      <div class="row"><span class="lbl">🔵 Pipe</span><span class="val neu">${pipes.length}</span></div>
+      <div class="row"><span class="lbl t">✅ Produção (qtd)</span><span class="val">${prods.length}</span></div>
+      <div class="row tr"><span class="lbl t">💰 VOP Total (prod)</span><span class="val">${fmtR(vop)}</span></div>
+      ${metaQtd?metaBar(prods.length,metaQtd,'safrapay_qtd'):''}
+      ${metaVop?metaBar(vop,metaVop,'safrapay_vop'):''}`;
+    if(!all.length){ h+=`<div class="empty"><div class="empty-icon">💳</div>Nenhum cliente.</div>`; }
+    else all.forEach(v=>{ h+=`<div class="cm">
+      <div class="cm-top"><span class="cm-name">${v.cliente||'—'}</span><span class="cm-badge ${v.tipo||'pipe'}">${v.tipo==='prod'?'✅ Prod':'🔵 Pipe'}</span></div>
+      <div class="cm-detail">${v.vop?fmtR(pnRaw(v.vop)):''} ${v.status?'· '+fmtStatus(v.status):''} ${v.data?'· '+fmtDate(v.data):''}</div>
+    </div>`; });
+    h+=`</div>`;
+  });
+  h+=`<div class="row"><span class="lbl t">TOTAL: ${tProd} prod · ${tPipe} pipe</span></div>`;
+  h+=`<div class="row tr"><span class="lbl t">VOP Total</span><span class="val total">${fmtR(tVop)}</span></div>`;
+  h+=`</div>${waToggleUI('safrapay')}`;
+  el('sec-safrapay').innerHTML=h;
+  const cnt=el('safrapay_count'); if(cnt) cnt.textContent=`🔵 ${tPipe} · ✅ ${tProd} · ${fmtR(tVop)}`;
+}
+
+function rCredito(){
+  let tPipe=0,tProd=0,tValor=0;
+  let h=`<div class="card">
+    <div class="card-header blue"><span class="card-title">CRÉDITO — POR GERENTE</span>
+      <span class="card-count" id="credito_count">…</span>
+    </div>`;
+  MGR.forEach(gid=>{
+    const {pipes,prods,all}=getProds(gid,'credito_list');
+    tPipe+=pipes.length; tProd+=prods.length;
+    const valor=getCreditoValor(gid); tValor+=valor;
+    const st=gerStatus(gid);
+    const metaValor=METAS[gid]?.credito||0;
+    h+=`<div class="ger-block">
+      <div class="ger-head"><span class="ger-head-name">${NAMES[gid]}</span><span class="ger-status ${st.cls}">${st.lbl}</span></div>
+      <div class="row"><span class="lbl">🔵 Pipe</span><span class="val neu">${pipes.length}</span></div>
+      <div class="row"><span class="lbl t">✅ Produção (qtd)</span><span class="val">${prods.length}</span></div>
+      <div class="row tr"><span class="lbl t">💰 Valor Total (prod)</span><span class="val">${fmtR(valor)}</span></div>
+      ${metaBar(valor, metaValor, 'credito')}`;
+    if(!all.length){ h+=`<div class="empty"><div class="empty-icon">💼</div>Nenhum cliente.</div>`; }
+    else all.forEach(v=>{ h+=`<div class="cm">
+      <div class="cm-top"><span class="cm-name">${v.cliente||'—'}</span><span class="cm-badge ${v.tipo||'pipe'}">${v.tipo==='prod'?'✅ Prod':'🔵 Pipe'}</span></div>
+      <div class="cm-detail">${v.valor?fmtR(pnRaw(v.valor)):''} ${v.garantia?'· '+v.garantia:''} ${v.status?'· '+fmtStatus(v.status):''} ${v.data?'· '+fmtDate(v.data):''}</div>
+    </div>`; });
+    h+=`</div>`;
+  });
+  h+=`<div class="row"><span class="lbl t">TOTAL: ${tProd} prod · ${tPipe} pipe</span></div>`;
+  h+=`<div class="row tr"><span class="lbl t">Valor Total</span><span class="val total">${fmtR(tValor)}</span></div>`;
+  h+=`</div>${waToggleUI('credito')}`;
+  el('sec-credito').innerHTML=h;
+  const cnt=el('credito_count'); if(cnt) cnt.textContent=`🔵 ${tPipe} · ✅ ${tProd} · ${fmtR(tValor)}`;
+}
+
+// ══════════════════════════════════════════════════
+// METAS EDITOR
+// ══════════════════════════════════════════════════
+const META_KEYS = ['tac','giro','ativos','contas','consorcio','collarkin','captacao','seguro',
+                   'viab','safrapay_qtd','safrapay_vop','credito'];
+
+const META_LABELS = {
+  tac:'TAC (R$)', giro:'Giro (qtd)', ativos:'Ativos (R$)',
+  contas:'Contas', consorcio:'Consórcio', collarkin:'Collarkin',
+  captacao:'Captação', seguro:'Seguro',
+  viab:'Viabilizados (qtd prod)',
+  safrapay_qtd:'Safrapay — Qtd produções',
+  safrapay_vop:'Safrapay — VOP total (R$)',
+  credito:'Crédito — Valor prod (R$)'
+};
+
+function rMetas(){
+  let h=`<div class="meta-editor-card">
+    <div class="meta-editor-head">
+      <span class="meta-editor-title">🎯 DEFINIR METAS DO MÊS</span>
+    </div>
+    <div style="padding:10px 14px 4px;font-size:11px;color:var(--text3)">
+      Defina as metas de cada gerente. Clique em <strong>💾 Salvar Metas</strong> para enviar.
+      Para Viabilizados, Safrapay e Crédito, a meta é em <strong>quantidade de produções</strong>.
+    </div>`;
+  MGR.forEach(gid=>{
+    h+=`<div class="meta-ger-block">
+      <div class="meta-ger-name">${NAMES[gid]}</div>
+      <div class="meta-grid">`;
+    META_KEYS.forEach(prefix=>{
+      const val=METAS[gid]?.[prefix]||'';
+      h+=`<div class="meta-cell">
+        <div class="meta-cell-lbl">${META_LABELS[prefix]||prefix.toUpperCase()}</div>
+        <input class="meta-inp" id="meta_${gid}_${prefix}" type="text" value="${val?val.toLocaleString('pt-BR'):''}" placeholder="—">
+      </div>`;
+    });
+    h+=`</div></div>`;
+  });
+  h+=`</div>`;
+  el('sec-metas').innerHTML=h;
+}
+
+// ══════════════════════════════════════════════════
+// SALVAR METAS
+// ══════════════════════════════════════════════════
+window.saveMetas = function(){
+  const updates={};
+  MGR.forEach(gid=>{
+    const obj={};
+    META_KEYS.forEach(prefix=>{
+      const inp=el(`meta_${gid}_${prefix}`);
+      if(!inp) return;
+      const raw=inp.value.replace(/\./g,'').replace(',','.');
+      const val=parseFloat(raw)||0;
+      if(val) obj[prefix]=val;
+    });
+    updates[`${BASE}/metas/${gid}`]=obj;
+    METAS[gid]=obj;
+  });
+  if(!db){ showToast('❌ Sem conexão Firebase'); return; }
+  db.ref('/').update(updates)
+    .then(()=>{ showToast('✅ Metas salvas e enviadas!'); renderAll(); })
+    .catch(e=>showToast('❌ Erro: '+e.message));
+};
+
+// ══════════════════════════════════════════════════
+// WHATSAPP
+// ══════════════════════════════════════════════════
+window.openWA = function(){
+  const d=today, ds=`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  el('modal-date').textContent=ds;
+  const inc=sec=>WA_INC[sec];
+  let t=`*Ag. Boa Viagem — ${ds}*\n_Relatório Consolidado GG_\n\n`;
+
+  if(inc('tac')){
+    t+=`*📊 TAC*\n`; let tot=0;
+    MGR.forEach(gid=>{ const v=getMes(gid,'tac'); tot+=v; t+=`${NAMES[gid]}: ${fmt(v)}\n`; });
+    t+=`*Total: ${fmt(tot)}*\n\n`;
+  }
+  if(inc('chemp')){
+    t+=`*🏦 CHEMP*\n`;
+    MGR.forEach(gid=>{ const a=pnd(gid,'chemp_ant'),d2=pnd(gid,'chemp_dia'),delta=d2-a; t+=`${NAMES[gid]}: ${fmt(d2)} | Δ ${delta>=0?'▲':'▼'}${fmtR(Math.abs(delta))}\n`; });
+    t+='\n';
+  }
+  if(inc('giro')){
+    t+=`*🔄 GIRO*\n`; let tot=0;
+    MGR.forEach(gid=>{ const v=getMes(gid,'giro'); tot+=v; t+=`${NAMES[gid]}: ${Math.round(v)||'—'}\n`; });
+    t+=`*Total: ${Math.round(tot)||'—'}*\n\n`;
+  }
+  if(inc('ativos')){
+    t+=`*💰 ATIVOS*\n`; let tot=0;
+    MGR.forEach(gid=>{ let mT=0; AT.forEach(p=>mT+=getMes(gid,`at_${slug(p)}`)); tot+=mT; t+=`${NAMES[gid]}: ${fmtR(mT)}\n`; });
+    t+=`*Total: ${fmt(tot)}*\n\n`;
+  }
+  SIMPLES.forEach(({id,t:title})=>{
+    if(!inc(id)) return;
+    t+=`*${title}*\n`; let tot=0;
+    MGR.forEach(gid=>{ const v=getMes(gid,id); tot+=v; t+=`${NAMES[gid]}: ${fmt(v)||'—'}\n`; });
+    t+=`*Total: ${fmt(tot)||'—'}*\n\n`;
+  });
+  if(inc('viab')){
+    t+=`*👥 VIABILIZADOS*\n`; let tP=0,tR=0;
+    MGR.forEach(gid=>{ const raw=gd(gid,'viab_list'); const l=raw?JSON.parse(raw):[]; const pi=l.filter(x=>x.tipo==='pipe'); const pr=l.filter(x=>x.tipo==='prod'); tP+=pi.length; tR+=pr.length; if(l.length) t+=`${NAMES[gid]}: ${pr.length} prod · ${pi.length} pipe\n`; });
+    t+=`*Total: ${tR} prod · ${tP} pipe*\n\n`;
+  }
+  if(inc('safrapay')){
+    t+=`*💳 SAFRAPAY*\n`; let tP=0,tR=0;
+    MGR.forEach(gid=>{ const raw=gd(gid,'safrapay_list'); const l=raw?JSON.parse(raw):[]; const pi=l.filter(x=>x.tipo==='pipe'); const pr=l.filter(x=>x.tipo==='prod'); tP+=pi.length; tR+=pr.length; if(l.length) t+=`${NAMES[gid]}: ${pr.length} prod · ${pi.length} pipe\n`; });
+    t+=`*Total: ${tR} prod · ${tP} pipe*\n\n`;
+  }
+  if(inc('credito')){
+    t+=`*💼 CRÉDITO*\n`; let tP=0,tR=0;
+    MGR.forEach(gid=>{ const raw=gd(gid,'credito_list'); const l=raw?JSON.parse(raw):[]; const pi=l.filter(x=>x.tipo==='pipe'); const pr=l.filter(x=>x.tipo==='prod'); tP+=pi.length; tR+=pr.length; if(l.length) t+=`${NAMES[gid]}: ${pr.length} prod · ${pi.length} pipe\n`; });
+    t+=`*Total: ${tR} prod · ${tP} pipe*`;
+  }
+  el('waText').textContent=t.trimEnd();
+  el('modal').classList.add('open');
+};
+
+window.copyWA = function(){
+  const txt=el('waText').textContent;
+  navigator.clipboard.writeText(txt).then(()=>{ showToast('Copiado! ✓'); closeModal(); })
+    .catch(()=>{ const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('Copiado! ✓');closeModal(); });
+};
+window.closeModal = ()=>el('modal').classList.remove('open');
+
+// ══════════════════════════════════════════════════
+// EXCEL EXPORT
+// ══════════════════════════════════════════════════
+window.exportExcel = function(){
+  // Usa SheetJS (xlsx) para gerar planilha no browser
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  script.onload = ()=> buildExcel();
+  document.head.appendChild(script);
+  showToast('⏳ Gerando planilha…');
+};
+
+function buildExcel(){
+  const XLSX = window.XLSX;
+  const wb = XLSX.utils.book_new();
+  const mth = `${today.getMonth()+1<10?'0':''}${today.getMonth()+1}/${today.getFullYear()}`;
+
+  // ── Aba 1: Resumo ──
+  const resumoData = [
+    ['PRODUÇÃO — AG. BOA VIAGEM · BANCO SAFRA · '+mth],
+    [],
+    ['Gerente','TAC Mês','Giro Mês','Ativos Total','Contas','Consórcio','Collarkin','Captação','Seguro'],
+  ];
+  let totRow = ['TOTAL AGÊNCIA',0,0,0,0,0,0,0,0];
+  MGR.forEach(gid=>{
+    let ativ=0; AT.forEach(p=>ativ+=getMes(gid,`at_${slug(p)}`));
+    const row = [NAMES[gid], getMes(gid,'tac'), getMes(gid,'giro'), ativ,
+      getMes(gid,'contas'), getMes(gid,'consorcio'), getMes(gid,'collarkin'),
+      getMes(gid,'captacao'), getMes(gid,'seguro')];
+    for(let i=1;i<9;i++) totRow[i]+=row[i];
+    resumoData.push(row);
+  });
+  resumoData.push(totRow);
+  const ws1 = XLSX.utils.aoa_to_sheet(resumoData);
+  ws1['!cols'] = [{wch:22},{wch:14},{wch:12},{wch:14},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws1, '📊 Resumo');
+
+  // ── Aba 2: Metas vs Realizado ──
+  const metasData = [['METAS VS REALIZADO — '+mth],[]];
+  const hdr=['Gerente'];
+  META_KEYS.forEach(k=>hdr.push(k.toUpperCase()+' Meta', k.toUpperCase()+' Real', k.toUpperCase()+' %'));
+  metasData.push(hdr);
+  MGR.forEach(gid=>{
+    const row=[NAMES[gid]];
+    META_KEYS.forEach(k=>{
+      const meta=METAS[gid]?.[k]||0;
+      let real=0;
+      if(k==='ativos'){ AT.forEach(p=>real+=getMes(gid,`at_${slug(p)}`)); }
+      else real=getMes(gid,k);
+      row.push(meta, real, meta?parseFloat((real/meta*100).toFixed(1)):0);
+    });
+    metasData.push(row);
+  });
+  const ws2=XLSX.utils.aoa_to_sheet(metasData);
+  XLSX.utils.book_append_sheet(wb,ws2,'🎯 Metas vs Realizado');
+
+  // ── Aba 3: Status do dia ──
+  const statusData=[['STATUS DO DIA — '+mth],[],['Gerente','Última Atualização','Status']];
+  MGR.forEach(gid=>{
+    const d=DATA[gid]; const ts=d?._ultima_atualizacao;
+    let timeStr='—';
+    if(ts){ const dt=new Date(ts); timeStr=`${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`; }
+    statusData.push([NAMES[gid], timeStr, d?(d.dia_concluido?'✅ Concluído':'⏳ Pendente'):'⚪ Offline']);
+  });
+  const ws3=XLSX.utils.aoa_to_sheet(statusData);
+  ws3['!cols']=[{wch:20},{wch:22},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,ws3,'📅 Status');
+
+  // ── Aba 4: CHEMP ──
+  const chempData=[['CHEMP — '+mth],[],['Gerente','Saldo Mês Ant.','Saldo Dia Atual','Incremento (Δ)','Novos Limites']];
+  MGR.forEach(gid=>{
+    const ant=pnd(gid,'chemp_ant'),dia=pnd(gid,'chemp_dia');
+    chempData.push([NAMES[gid],ant,dia,dia-ant,pnd(gid,'chemp_novos')]);
+  });
+  const ws4=XLSX.utils.aoa_to_sheet(chempData);
+  XLSX.utils.book_append_sheet(wb,ws4,'🏦 CHEMP');
+
+  // ── Aba 5: Pipes & Crédito ──
+  const pipesData=[['PIPES & CRÉDITO — '+mth],[],
+    ['Gerente','Módulo','Tipo','Cliente','Detalhe','Valor','Garantia','Prestamista','Data','Status']];
+  MGR.forEach(gid=>{
+    [['viab_list','Viabilizados'],['safrapay_list','Safrapay'],['credito_list','Crédito']].forEach(([key,mod])=>{
+      const raw=gd(gid,key); const list=raw?JSON.parse(raw):[];
+      list.forEach(v=>{
+        pipesData.push([NAMES[gid],mod,v.tipo==='prod'?'Produção':'Pipe',
+          v.cliente||'—', v.viabiliza||v.status||'',
+          v.valor||v.vop||'',v.garantia||'',v.seguro||v.arvValor||'',
+          v.data?fmtDate(v.data):'—',fmtStatus(v.status||'')]);
+      });
+    });
+  });
+  const ws5=XLSX.utils.aoa_to_sheet(pipesData);
+  ws5['!cols']=[{wch:14},{wch:14},{wch:10},{wch:24},{wch:20},{wch:14},{wch:16},{wch:14},{wch:14},{wch:20}];
+  ws5['!autofilter']={ref:'A3:J3'};
+  XLSX.utils.book_append_sheet(wb,ws5,'👥 Pipes & Crédito');
+
+  // Salvar
+  const fname=`Producao_BoaViagem_${mth.replace('/','_')}.xlsx`;
+  XLSX.writeFile(wb,fname);
+  showToast(`✅ ${fname} baixado!`);
+}
+
+// ══════════════════════════════════════════════════
+// RENDER ALL
+// ══════════════════════════════════════════════════
+function renderAll(){
+  rDash(); rMetas(); rSecretariaGG();
+}
+
+// ══════════════════════════════════════════════════
+// SECRETÁRIA INTELIGENTE GG
+// ══════════════════════════════════════════════════
+const GG_SEC_KEY    = 'gg_sec_hist_v1';
+const GG_AGENDA_KEY = 'gg_agenda_v1';
+const GG_LEMB_KEY   = 'gg_lemb_v1';
+const GG_NOTAS_KEY  = 'gg_notas_v1';  // mantém diário como notas
+let   GG_MIC_ON     = false;
+let   GG_MIC_REC    = null;
+let   GG_SEC_LOADING = false;
+
+function getGGHist(){  try{ return JSON.parse(localStorage.getItem(GG_SEC_KEY)||'[]'); }catch(e){ return []; } }
+function saveGGHist(h){ try{ localStorage.setItem(GG_SEC_KEY, JSON.stringify(h.slice(-100))); }catch(e){} }
+function getGGAgenda(){ try{ return JSON.parse(localStorage.getItem(GG_AGENDA_KEY)||'[]'); }catch(e){ return []; } }
+function saveGGAgenda(a){ try{ localStorage.setItem(GG_AGENDA_KEY, JSON.stringify(a)); }catch(e){} }
+function getGGLemb(){  try{ return JSON.parse(localStorage.getItem(GG_LEMB_KEY)||'[]'); }catch(e){ return []; } }
+function saveGGLemb(l){ try{ localStorage.setItem(GG_LEMB_KEY, JSON.stringify(l)); }catch(e){} }
+function getGGNotas(){ try{ return JSON.parse(localStorage.getItem(GG_NOTAS_KEY)||'{}'); }catch(e){ return {}; } }
+function saveGGNotas(n){ try{ localStorage.setItem(GG_NOTAS_KEY, JSON.stringify(n)); }catch(e){} }
+
+function toDateStrGG(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function fmtDateGG(ds){ const d=new Date(ds+'T00:00:00'); const dias=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']; const ms=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']; return `${dias[d.getDay()]}, ${d.getDate()} ${ms[d.getMonth()]}`; }
+function fmtGGTime(iso){ const d=new Date(iso); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+
+function getWeekDates(){
+  const d=new Date(today), dow=d.getDay();
+  const off=dow===0?-6:1-dow;
+  const mon=new Date(d); mon.setDate(d.getDate()+off);
+  const dates=[];
+  for(let i=0;i<5;i++){ const dt=new Date(mon); dt.setDate(mon.getDate()+i); if(dt<=today) dates.push(toDateStrGG(dt)); }
+  return dates;
+}
+
+// Contexto completo da agência para a IA
+function buildGGContext(){
+  const du=getDiasUteisPassados(), dt=getTotalDiasUteis();
+  const lines=[];
+  lines.push(`GG: Eduardo | Agência Boa Viagem (14400) | Mês: ${MONTH_KEY} | Hoje: ${toDateStrGG(today)} (${du}/${dt} dias úteis)`);
+  lines.push('');
+  lines.push('=== EQUIPE E STATUS ==');
+  MGR.forEach(gid=>{
+    const st=gerStatus(gid);
+    const tac=getMes(gid,'tac'), tacM=METAS[gid]?.tac||0;
+    const pct=tacM>0?(tac/tacM*100).toFixed(0)+'%':'sem meta';
+    lines.push(`${NAMES[gid]}: TAC R$ ${fmt(tac)} (${pct}) | Status: ${st.lbl}`);
+  });
+  lines.push('');
+  lines.push('=== CONSOLIDADO DO MÊS ==');
+  let tacT=0; MGR.forEach(gid=>tacT+=getMes(gid,'tac'));
+  lines.push(`TAC Total: R$ ${fmt(tacT)}`);
+  let giroT=0; MGR.forEach(gid=>giroT+=getMes(gid,'giro'));
+  lines.push(`Giro Total: ${Math.round(giroT)}`);
+  let viabT=0; MGR.forEach(gid=>viabT+=getProds(gid,'viab_list').prods.length);
+  lines.push(`Viabilizados: ${viabT} produções`);
+  let spVop=0; MGR.forEach(gid=>spVop+=getSafrapayVop(gid));
+  lines.push(`Safrapay VOP: R$ ${fmt(spVop)}`);
+  let crVal=0; MGR.forEach(gid=>crVal+=getCreditoValor(gid));
+  lines.push(`Crédito BS: R$ ${fmt(crVal)}`);
+  // Notas do diário desta semana
+  const notas=getGGNotas(), week=getWeekDates();
+  const notasSemana=week.filter(d=>notas[d]).map(d=>`${fmtDateGG(d)}: ${notas[d]}`);
+  if(notasSemana.length){ lines.push(''); lines.push('=== NOTAS DA SEMANA =='); notasSemana.forEach(n=>lines.push(n)); }
+  // Agenda
+  const ag=getGGAgenda().filter(a=>a.data>=toDateStrGG(today)).slice(0,5);
+  if(ag.length){ lines.push(''); lines.push('=== PRÓXIMOS COMPROMISSOS =='); ag.forEach(a=>lines.push(`${a.data} ${a.hora||''} — ${a.titulo}`)); }
+  const lb=getGGLemb().filter(l=>!l.feito).slice(0,5);
+  if(lb.length){ lines.push(''); lines.push('=== LEMBRETES =='); lb.forEach(l=>lines.push(`• ${l.texto}`)); }
+  return lines.join('\n');
+}
+
+function buildGGSystemPrompt(){
+  const ctx = buildGGContext();
+  const jsonNota    = '```json\n{"action":"nota","data":"YYYY-MM-DD","texto":""}```';
+  const jsonAgendar = '```json\n{"action":"agendar","titulo":"","data":"YYYY-MM-DD","hora":"HH:MM","descricao":""}```';
+  const jsonLemb    = '```json\n{"action":"lembrete","texto":""}```';
+  return `Você é a SecretárIA Inteligente do Eduardo, Gerente Geral da Agência Boa Viagem do Banco Safra (Ag. 14400).
+
+Você tem visão completa da equipe (8 gerentes) e ajuda o GG a gerir melhor a agência.
+
+CAPACIDADES:
+1. DIÁRIO/NOTAS — registre as notas do GG. Retorne JSON: ${jsonNota}
+2. RESUMO DA SEMANA — gere e-mail executivo para a gestora combinando notas + dados reais. Tom: otimista com pontos de atenção, por tópicos de produto.
+3. AGENDA — agende compromissos. JSON: ${jsonAgendar}
+4. LEMBRETE — salve lembretes. JSON: ${jsonLemb}
+5. ANÁLISE DA EQUIPE — analise performance individual e coletiva, identifique riscos, sugira intervenções.
+6. BUSCA CNPJ/MERCADO — pesquise empresas, ramos de atividade, tendências de mercado.
+7. DICAS DE GESTÃO — melhores práticas para liderar equipes comerciais bancárias.
+8. AUDITORIA — quando solicitado, analise padrões nos logs de auditoria dos gerentes.
+
+REGRAS:
+- Seja estratégica e executiva. Eduardo é o GG, não o gerente.
+- Use dados reais da equipe nas análises.
+- Para e-mail da semana: por tópicos de produto, otimista mas com pontos de atenção reais.
+- JSON em bloco separado do texto.
+
+DADOS ATUAIS DA AGÊNCIA:
+${ctx}`;
+}
+
+function rSecretariaGG(){ renderGGSec(); }
+
+function renderGGSec(){
+  const hist   = getGGHist();
+  const agenda = getGGAgenda().filter(a=>a.data>=toDateStrGG(today)).sort((a,b)=>a.data.localeCompare(b.data));
+  const lembs  = getGGLemb().filter(l=>!l.feito);
+  const notas  = getGGNotas();
+  const todayStr = toDateStrGG(today);
+
+  let h=`<div class="sec-chat">
+    <div class="chat-header-bar">
+      <div class="chat-avatar">🤖</div>
+      <div style="flex:1">
+        <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:#fff">SecretárIA Inteligente — GG</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.5)">Banco Safra · Ag. Boa Viagem</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${agenda.length?`<div style="background:rgba(255,255,255,0.15);border-radius:12px;padding:3px 8px;font-size:10px;color:#fff;cursor:pointer" onclick="toggleGGPanel('gg_agenda_panel')" title="Agenda">📅 ${agenda.length}</div>`:''}
+        ${lembs.length?`<div style="background:rgba(196,107,0,0.4);border-radius:12px;padding:3px 8px;font-size:10px;color:#ffc97a;cursor:pointer" onclick="toggleGGPanel('gg_lemb_panel')" title="Lembretes">⏰ ${lembs.length}</div>`:''}
+        <div style="background:rgba(255,255,255,0.1);border-radius:12px;padding:3px 8px;font-size:10px;color:rgba(255,255,255,0.5);cursor:pointer" onclick="toggleGGPanel('gg_notas_panel')" title="Notas da semana">📋 Notas</div>
+        <div style="background:rgba(255,255,255,0.1);border-radius:12px;padding:3px 8px;font-size:10px;color:rgba(255,255,255,0.5);cursor:pointer" onclick="limparGGHist()" title="Limpar histórico">🗑️</div>
+      </div>
+    </div>
+
+    <!-- Painel Agenda -->
+    <div id="gg_agenda_panel" style="display:none;background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 14px;max-height:160px;overflow-y:auto">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">📅 Agenda</div>
+      ${agenda.length?agenda.map((a,i)=>`<div class="agenda-item" style="display:flex;justify-content:space-between;align-items:center"><div><div class="agenda-time">${a.data}${a.hora?' '+a.hora:''}</div><div style="font-size:12px;font-weight:600">${a.titulo}</div>${a.descricao?`<div style="font-size:11px;color:var(--text3)">${a.descricao}</div>`:''}</div><button onclick="removerGGAgenda(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px">✕</button></div>`).join(''): '<div style="font-size:12px;color:var(--text3)">Nenhum compromisso.</div>'}
+    </div>
+
+    <!-- Painel Lembretes -->
+    <div id="gg_lemb_panel" style="display:none;background:var(--orange-bg);border-bottom:1px solid rgba(196,107,0,0.2);padding:10px 14px;max-height:160px;overflow-y:auto">
+      <div style="font-size:10px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">⏰ Lembretes</div>
+      ${lembs.length?lembs.map((l,i)=>`<div class="lembrete-item" style="display:flex;justify-content:space-between;align-items:center"><span>${l.texto}</span><div style="display:flex;gap:6px"><button onclick="marcarFeitoGG(${i})" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer">✓</button><button onclick="removerGGLemb(${i})" style="background:none;border:none;color:var(--orange);cursor:pointer;font-size:16px">✕</button></div></div>`).join(''): '<div style="font-size:12px;color:var(--orange)">Sem lembretes.</div>'}
+    </div>
+
+    <!-- Painel Notas da Semana -->
+    <div id="gg_notas_panel" style="display:none;background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 14px;max-height:200px;overflow-y:auto">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">📋 Notas da Semana</div>`;
+
+  // Campo de nota do dia
+  h+=`<div style="margin-bottom:10px">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px">Nota de hoje (${fmtDateGG(todayStr)})</div>
+      <div style="display:flex;gap:6px">
+        <textarea id="gg_nota_hoje" placeholder="O que aconteceu hoje…" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:'IBM Plex Sans',sans-serif;resize:none;height:60px;background:var(--surface)">${notas[todayStr]||''}</textarea>
+        <button onclick="salvarNotaGG()" style="padding:6px 10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:11px;cursor:pointer;height:60px;white-space:nowrap">💾<br>Salvar</button>
+      </div>
+    </div>`;
+
+  // Notas da semana
+  const week=getWeekDates().filter(d=>d!==todayStr&&notas[d]);
+  if(week.length){
+    week.reverse().forEach(ds=>{
+      h+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px">
+        <div style="font-size:10px;font-weight:700;color:var(--text3);margin-bottom:4px">${fmtDateGG(ds)}</div>
+        <div style="color:var(--text);line-height:1.5">${notas[ds]}</div>
+      </div>`;
+    });
+  }
+
+  // Botão gerar resumo
+  const isQuintaOuSexta=today.getDay()===4||today.getDay()===5;
+  h+=`<button onclick="pedirResumoGG()" style="width:100%;padding:9px;background:${isQuintaOuSexta?'var(--accent)':'var(--surface)'};color:${isQuintaOuSexta?'#fff':'var(--text2)'};border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin-top:4px">${isQuintaOuSexta?'✉️ Gerar Resumo da Semana (quinta/sexta) ▶':'📝 Pedir resumo da semana para a IA'}</button>`;
+  h+=`</div>
+
+    <!-- Mensagens do chat -->
+    <div class="chat-messages" id="gg_messages">`;
+
+  if(!hist.length){
+    h+=`<div class="chat-msg ai"><div class="chat-bubble ai">Sou sua secretárIA Inteligente. Em que posso te ajudar hoje? Quer saber o que posso fazer por você? Só me perguntar que te digo tudo que posso fazer. 😊</div><div class="chat-ts">${fmtGGTime(new Date().toISOString())}</div></div>`;
+  } else {
+    hist.forEach(m=>{
+      const display=m.role==='assistant'?m.content.replace(/\`\`\`json[\s\S]*?\`\`\`/g,'').trim():m.content;
+      if(!display) return;
+      h+=`<div class="chat-msg ${m.role}"><div class="chat-bubble ${m.role}">${display.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>${m.ts?`<div class="chat-ts">${fmtGGTime(m.ts)}</div>`:''}</div>`;
+    });
+  }
+
+  h+=`</div>
+    <div class="chat-input-bar">
+      <button class="chat-btn-mic" id="gg_mic_btn" onclick="toggleGGMic()" title="Falar por microfone">🎤</button>
+      <textarea class="chat-input" id="gg_input" placeholder="Digite ou fale sua mensagem…" rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarGGMsg();}"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+      <button class="chat-btn-send" onclick="enviarGGMsg()" title="Enviar">➤</button>
+    </div>
+  </div>`;
+
+  el('sec-secretaria').innerHTML=h;
+  setTimeout(()=>{ const m=el('gg_messages'); if(m) m.scrollTop=m.scrollHeight; },100);
+}
+
+function toggleGGPanel(id){ const p=el(id); if(p) p.style.display=p.style.display==='none'?'block':'none'; }
+function removerGGAgenda(i){ const a=getGGAgenda(); a.splice(i,1); saveGGAgenda(a); renderGGSec(); }
+function removerGGLemb(i){ const l=getGGLemb(); l.splice(i,1); saveGGLemb(l); renderGGSec(); }
+function marcarFeitoGG(i){ const l=getGGLemb(); l[i].feito=true; saveGGLemb(l); showToast('✅ Lembrete concluído!'); renderGGSec(); }
+function limparGGHist(){ if(!confirm('Limpar histórico da SecretárIA?')) return; localStorage.removeItem(GG_SEC_KEY); renderGGSec(); showToast('Histórico limpo ✓'); }
+
+function salvarNotaGG(){
+  const texto=el('gg_nota_hoje')?.value?.trim();
+  if(!texto){ showToast('⚠️ Digite algo antes de salvar'); return; }
+  const notas=getGGNotas();
+  notas[toDateStrGG(today)]=texto;
+  saveGGNotas(notas);
+  showToast('✅ Nota salva!');
+  renderGGSec();
+}
+
+function pedirResumoGG(){
+  const input=el('gg_input');
+  if(input) input.value='Gere o resumo da semana formatado como e-mail para minha gestora. Tom otimista com pontos de atenção reais, por tópico de produto.';
+  enviarGGMsg();
+}
+
+async function enviarGGMsg(){
+  if(GG_SEC_LOADING) return;
+  const input=el('gg_input');
+  const texto=input?.value?.trim();
+  if(!texto) return;
+  if(GG_MIC_ON) stopGGMic();
+  input.value=''; input.style.height='auto';
+
+  const hist=getGGHist();
+  hist.push({role:'user',content:texto,ts:new Date().toISOString()});
+  saveGGHist(hist);
+  renderGGSec();
+  GG_SEC_LOADING=true;
+
+  const msgs=el('gg_messages');
+  if(msgs){ const ld=document.createElement('div'); ld.className='chat-msg ai'; ld.id='gg_loading'; ld.innerHTML=`<div class="chat-bubble ai loading">⏳ Pensando…</div>`; msgs.appendChild(ld); msgs.scrollTop=msgs.scrollHeight; }
+
+  try{
+    const apiMsgs=hist.slice(-20).map(m=>({role:m.role==='user'?'user':'assistant',content:m.content}));
+    const data=await callAnthropicAPI(buildGGSystemPrompt(), apiMsgs, 1200);
+    const resposta=data.content?.[0]?.text||'Não consegui responder.';
+    await processGGActions(resposta);
+    const h2=getGGHist();
+    h2.push({role:'assistant',content:resposta,ts:new Date().toISOString()});
+    saveGGHist(h2);
+  }catch(e){
+    const h2=getGGHist();
+    h2.push({role:'assistant',content:`❌ Erro: ${e.message}`,ts:new Date().toISOString()});
+    saveGGHist(h2);
+  }
+
+  GG_SEC_LOADING=false;
+  renderGGSec();
+}
+
+async function processGGActions(texto){
+  const m=texto.match(/\`\`\`json\s*([\s\S]*?)\s*\`\`\`/);
+  if(!m) return;
+  try{
+    const a=JSON.parse(m[1]);
+    if(a.action==='agendar'){ const ag=getGGAgenda(); ag.push({titulo:a.titulo,data:a.data,hora:a.hora||'',descricao:a.descricao||''});  ag.sort((x,y)=>x.data.localeCompare(y.data)); saveGGAgenda(ag); showToast(`📅 Agendado: ${a.titulo}`); }
+    else if(a.action==='lembrete'){ const lb=getGGLemb(); lb.push({texto:a.texto,feito:false,ts:new Date().toISOString()}); saveGGLemb(lb); showToast('⏰ Lembrete salvo!'); }
+    else if(a.action==='nota'){ const notas=getGGNotas(); const ds=a.data||toDateStrGG(today); notas[ds]=(notas[ds]?notas[ds]+'\n':'')+a.texto; saveGGNotas(notas); showToast('📋 Nota salva!'); }
+  }catch(e){ console.warn('GG action error:',e); }
+}
+
+function toggleGGMic(){ GG_MIC_ON?stopGGMic():startGGMic(); }
+function startGGMic(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ showToast('⚠️ Use Chrome para reconhecimento de voz'); return; }
+  GG_MIC_REC=new SR(); GG_MIC_REC.lang='pt-BR'; GG_MIC_REC.continuous=true; GG_MIC_REC.interimResults=true;
+  const btn=el('gg_mic_btn'), input=el('gg_input');
+  let base=input?.value||'';
+  GG_MIC_REC.onstart=()=>{ GG_MIC_ON=true; if(btn){btn.classList.add('rec');btn.textContent='⏹';} showToast('🎤 Ouvindo…'); };
+  GG_MIC_REC.onresult=(e)=>{ let fin='',int=''; for(let i=e.resultIndex;i<e.results.length;i++){ if(e.results[i].isFinal)fin+=e.results[i][0].transcript+' '; else int+=e.results[i][0].transcript; } if(fin)base+=(base?' ':'')+fin.trim(); if(input)input.value=base+(int?' '+int:''); };
+  GG_MIC_REC.onerror=()=>stopGGMic();
+  GG_MIC_REC.onend=()=>{ if(GG_MIC_ON)GG_MIC_REC.start(); };
+  GG_MIC_REC.start();
+}
+function stopGGMic(){ GG_MIC_ON=false; if(GG_MIC_REC){GG_MIC_REC.stop();GG_MIC_REC=null;} const btn=el('gg_mic_btn'); if(btn){btn.classList.remove('rec');btn.textContent='🎤';} showToast('⏹ Gravação encerrada'); }
+
+// ══════════════════════════════════════════════════
+// AUDITORIA DISCRETA
+// ══════════════════════════════════════════════════
+let _auditLongPressTimer = null;
+
+function startAuditLongPress(e){
+  e.preventDefault();
+  _auditLongPressTimer = setTimeout(()=>{ abrirAuditoria(); }, 800);
+}
+function cancelAuditLongPress(){
+  clearTimeout(_auditLongPressTimer);
+}
+
+function abrirAuditoria(){
+  // Coletar logs de todos os gerentes via Firebase DATA
+  let todosLogs = [];
+  MGR.forEach(gid=>{
+    const raw = DATA[gid]?._audit_log;
+    if(raw){
+      try{
+        const logs = JSON.parse(raw);
+        logs.forEach(l=>{ l._gid = gid; l._nome = NAMES[gid]; todosLogs.push(l); });
+      }catch(e){}
+    }
+  });
+
+  // Ordenar por timestamp mais recente
+  todosLogs.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+
+  const modal = el('modalAuditoria');
+  const body  = el('auditBody');
+
+  if(!todosLogs.length){
+    body.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Nenhum registro de auditoria ainda.</div>`;
+  } else {
+    const tipoLabel = { fechamento_auto:'📅 Fechamento auto', ajuste_substituicao:'✏️ Substituição', ajuste_adicao:'➕ Adição' };
+    body.innerHTML = todosLogs.slice(0,100).map(l=>{
+      const dt = new Date(l.ts);
+      const dtStr = `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+      const cor = l.tipo==='fechamento_auto'?'var(--text3)':l.tipo==='ajuste_substituicao'?'var(--orange)':'var(--blue)';
+      return `<div style="padding:8px 14px;border-bottom:1px solid var(--border);font-size:11px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+          <strong style="color:var(--accent)">${l._nome}</strong>
+          <span style="color:var(--text3);font-family:'IBM Plex Mono',monospace">${dtStr}</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="color:${cor};font-weight:600">${tipoLabel[l.tipo]||l.tipo}</span>
+          <span style="color:var(--text2)">${l.modulo} · ${l.data_alvo||'hoje'}</span>
+        </div>
+        <div style="color:var(--text3);margin-top:2px">
+          ${l.valor_anterior?`Antes: ${l.valor_anterior} →`:''}
+          <strong style="color:var(--text)">${l.valor_novo}</strong>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  modal.classList.add('open');
+}
+
+// ══════════════════════════════════════════════════
+// FIREBASE
+// ══════════════════════════════════════════════════
+if(db){
+  db.ref(`${BASE}/gerentes`).on('value', snap=>{
+    const val=snap.val();
+    if(val){
+      MGR.forEach(gid=>{
+        if(val[gid]) DATA[gid]=val[gid];
+      });
+    }
+    el('syncPill').textContent='🟢 Online';
+    el('syncPill').classList.add('on');
+    renderAll();
+  }, err => {
+    console.error('Erro Firebase:', err);
+    el('syncPill').textContent='❌ Erro';
+  });
+  db.ref(`${BASE}/metas`).on('value', snap=>{
+    const val=snap.val();
+    if(val){ METAS=val; renderAll(); }
+  });
+} else {
+  el('syncPill').textContent='📴 Offline';
+}
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+;(function(){
+  const days=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const mths=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  el('dateBadge').textContent=`${days[today.getDay()]}, ${today.getDate()} ${mths[today.getMonth()]}`;
+})();
+
+buildShell();
+renderAll();
+
+// scroll hint
+(function(){
+  const tabsEl=el('tabs'),wrapper=el('tabsWrapper');
+  function upd(){
+    const s=tabsEl.scrollLeft,e=tabsEl.scrollWidth-tabsEl.clientWidth;
+    wrapper.classList.toggle('scroll-start',s<=4);
+    wrapper.classList.toggle('scroll-end',s>=e-4);
+    wrapper.classList.toggle('scroll-mid',s>4);
+  }
+  tabsEl.addEventListener('scroll',upd,{passive:true});
+  setTimeout(upd,100);
+})();
+</script>
+</body>
+</html>
