@@ -378,7 +378,7 @@ async function callAnthropicAPI(system, messages, maxTokens=1000){
       'anthropic-dangerous-direct-browser-access': 'true'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-5-20251022',
+      model: 'claude-sonnet-4-5',
       max_tokens: maxTokens,
       system: system,
       messages: messages
@@ -1550,26 +1550,33 @@ function buildGGSystemPrompt(){
   const jsonNota    = '```json\n{"action":"nota","data":"YYYY-MM-DD","texto":""}```';
   const jsonAgendar = '```json\n{"action":"agendar","titulo":"","data":"YYYY-MM-DD","hora":"HH:MM","descricao":""}```';
   const jsonLemb    = '```json\n{"action":"lembrete","texto":""}```';
+  const jsonRecado  = '```json\n{"action":"recado","texto":"mensagem aqui","para":"todos ou nome_do_gerente"}```';
   return `Você é a SecretárIA Inteligente do Eduardo, Gerente Geral da Agência Boa Viagem do Banco Safra (Ag. 14400).
 
 Você tem visão completa da equipe (8 gerentes) e ajuda o GG a gerir melhor a agência.
 
+GERENTES DISPONÍVEIS: Bruno (bruno), Camyla (camyla), Júlio (julio), Kaio (kaio), Roberta (roberta), Sérgio (sergio), Thaís (thais), Wheldson (wheldson)
+
 CAPACIDADES:
-1. DIÁRIO/NOTAS — registre as notas do GG. Retorne JSON: ${jsonNota}
+1. DIÁRIO/NOTAS — registre as notas do GG. JSON: ${jsonNota}
 2. RESUMO DA SEMANA — gere e-mail executivo para a gestora combinando notas + dados reais. Tom: otimista com pontos de atenção, por tópicos de produto.
 3. AGENDA — agende compromissos. JSON: ${jsonAgendar}
 4. LEMBRETE — salve lembretes. JSON: ${jsonLemb}
-5. ANÁLISE DA EQUIPE — analise performance individual e coletiva, identifique riscos, sugira intervenções.
-6. BUSCA CNPJ/MERCADO — pesquise empresas, ramos de atividade, tendências de mercado.
-7. DICAS DE GESTÃO — melhores práticas para liderar equipes comerciais bancárias.
-8. AUDITORIA — quando solicitado, analise padrões nos logs de auditoria dos gerentes.
+5. RECADO PARA GERENTES — envie mensagens/direcionamentos para um ou todos os gerentes. Eles verão na aba "Hoje" do app deles. JSON: ${jsonRecado}
+   - "para":"todos" → todos recebem
+   - "para":"bruno" → só Bruno recebe (use o id em minúsculas)
+   - Exemplos: "manda recado para todos: reunião amanhã 9h" → para:todos / "avisa a Camyla que meta de TAC está crítica" → para:camyla
+6. ANÁLISE DA EQUIPE — analise performance individual e coletiva, identifique riscos, sugira intervenções.
+7. BUSCA CNPJ/MERCADO — pesquise empresas, ramos de atividade, tendências de mercado.
+8. DICAS DE GESTÃO — melhores práticas para liderar equipes comerciais bancárias.
 
 REGRAS:
 - Seja estratégica e executiva. Eduardo é o GG, não o gerente.
 - Use dados reais da equipe nas análises.
 - Para e-mail da semana: por tópicos de produto, otimista mas com pontos de atenção reais.
+- SEMPRE pergunte a data quando relevante para notas ou compromissos.
 - JSON em bloco separado do texto.
-- FORMATAÇÃO: use **negrito** para destaques, listas com - para itens. Evite ## excessivos. Respostas limpas e organizadas visualmente.
+- FORMATAÇÃO: use **negrito** para destaques, listas com - para itens. Evite ## excessivos.
 
 DADOS ATUAIS DA AGÊNCIA:
 ${ctx}`;
@@ -1732,10 +1739,37 @@ async function processGGActions(texto){
     if(a.action==='agendar'){ const ag=getGGAgenda(); ag.push({titulo:a.titulo,data:a.data,hora:a.hora||'',descricao:a.descricao||''});  ag.sort((x,y)=>x.data.localeCompare(y.data)); saveGGAgenda(ag); showToast(`📅 Agendado: ${a.titulo}`); }
     else if(a.action==='lembrete'){ const lb=getGGLemb(); lb.push({texto:a.texto,feito:false,ts:new Date().toISOString()}); saveGGLemb(lb); showToast('⏰ Lembrete salvo!'); }
     else if(a.action==='nota'){ const notas=getGGNotas(); const ds=a.data||toDateStrGG(today); notas[ds]=(notas[ds]?notas[ds]+'\n':'')+a.texto; saveGGNotas(notas); showToast('📋 Nota salva!'); }
+    else if(a.action==='recado'){ await enviarRecadoGerentes(a); }
   }catch(e){ console.warn('GG action error:',e); }
 }
 
-function toggleGGMic(){ GG_MIC_ON?stopGGMic():startGGMic(); }
+async function enviarRecadoGerentes(a){
+  // Resolver destinatário
+  const textoRecado = a.texto || '';
+  const para = a.para || 'todos'; // 'todos' ou gerente_id ex: 'bruno'
+  const todayStr = toDateStrGG(today);
+  const ts = new Date().toISOString();
+
+  const recado = { texto: textoRecado, para, data: todayStr, ts, de: 'gg' };
+
+  // Salvar no Firebase
+  try {
+    const db = firebase.database();
+    const ref = db.ref(`agencia/boa_viagem/${MONTH_KEY}/recados`);
+    await ref.push(recado);
+    const dest = para === 'todos' ? 'todos os gerentes' : (NAMES[para] || para);
+    showToast(`📢 Recado enviado para ${dest}!`);
+  } catch(e) {
+    showToast('❌ Erro ao enviar recado: ' + e.message);
+  }
+}
+
+// Nomes para o GG resolver destinatário na IA
+const NOMES_PARA_ID = {
+  'bruno':'bruno','camyla':'camyla','júlio':'julio','julio':'julio',
+  'kaio':'kaio','roberta':'roberta','sérgio':'sergio','sergio':'sergio',
+  'thaís':'thais','thais':'thais','wheldson':'wheldson','todos':'todos'
+};
 function startGGMic(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){ showToast('⚠️ Use Chrome para reconhecimento de voz'); return; }
